@@ -1,0 +1,9 @@
+STATE=experimental
+INSTALLDIR=aarch64le/bin/
+INSTALLNAME=mmc_util
+NAME=mmc_util
+USER=builder
+HOST=bsp-d4
+DATE=2020/06/24-11:45:49-EDT
+TAGID=BSP_nxp-imx8qxp-cpu_br-710_be-710_918588_442
+DESCRIPTION=MMC Utility

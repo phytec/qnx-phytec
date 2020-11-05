@@ -1,0 +1,26 @@
+I2C manager for i.MX8 Lower Power I2C interface
+
+%C [options]
+
+Options:
+-I interface    (1 | 2 | 3 Default: 1)
+-a addr         Own address (default: 1)
+-c clock        Input clock (default: 66500000)
+-p physbase     Device physical base address
+-i intr         Interrupt event number
+-v verbose      Verbose mode
+-b blocking     Driver in blocking mode. Transmits are not interrupt driven. DEPRECATED option.
+-t timeout      Command timeout in ms
+-r retry        Number of retries when NACK is detected. If retry is non zero value and NACK is detected a transaction is repeated max.
+                n-times where n can be between 0-255. (default: 0)
+
+Generic options:
+--b bus_speed   Default bus speed
+                (Default: 100000)
+--m max_msg_len Minimum length of resmgr receive buffer
+                (Default: 128 bytes)
+--n nparts      Minimum number of iov_t's in resmgr context
+                (Default: 2)
+--u unit        Unit number. Number to append to device name prefix (/dev/i2c)
+                (Default: 0)
+--U uid:gid     change to specified user

@@ -1,0 +1,22 @@
+<!-- Unless otherwise specified, values/attributes are free-form strings -->
+    <!-- type is currently either BSP or SourceOnly -->
+<sourcePackage type="BSP" id="nxp-imx8qxp-cpu">
+    <title>NXP i.MX8QXP CPU</title>
+    <release></release>
+
+    <license>QDL and Apache II</license>
+    <requires>package: com.qnx.${baselineId}.target.connectivity.pci.hw.nxp_imx8_cpu</requires>
+    <requires>package: com.qnx.${baselineId}.target.screen.device_input_screen</requires>
+    <requires>package: com.qnx.${baselineId}.target.screen.fonts.engine</requires>
+    <requires>package: com.qnx.${baselineId}.target.screen.img_codecs</requires>
+    <requires>package: com.qnx.${baselineId}.target.screen.board.imx8</requires>
+    <startup>startup-imx8qxp-cpu</startup>
+    <description>This board support package is for the NXP i.MX8QXP CPU Board. This BSP contains prebuilt binaries and buildfiles to boot your board with the QNX Neutrino RTOS. In addition, this BSP provides source code for various drivers that you can build. For documentation to use this BSP, download the user's guide.</description>
+    <vendor>QNX Software Systems Limited</vendor>
+    <qnxTargetVersion>SDP7.1</qnxTargetVersion>
+    <qnxTargetCPU variant="aarch64le">AARCH64</qnxTargetCPU>
+    <!-- type is currently only import, will be extended in the future. -->
+    <bsp type="import">
+        <import id="nxp-imx8qxp-cpu">images/imx8qxp-cpu.build</import>
+    </bsp>
+</sourcePackage>

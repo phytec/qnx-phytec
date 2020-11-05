@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<module name="deva-mixer-cs42xx8">
+	<type>Element</type>
+	<classification>Driver</classification>
+
+	<description>
+	        <short>Generic Audio Codec for CS42xx8</short>
+	        <abstract>
+			<![CDATA[The deva-mixer-cs42xx8 shared object is responsible for configuring and operating a CS42xx8 audio codec device under the indirect control of the QNX Sound Architecture (io-audio). This driver is launched at the request of audio drivers (deva-ctrl-*) for hardware which includes an CS42xx8 codec.]]>
+	        </abstract>
+	</description>
+
+	<supports>
+		<availability ref="ostargets"/>
+		<availability supported="false">
+		 <cpu isa="arm"><byteOrder>be</byteOrder></cpu>
+		</availability>
+	</supports>
+
+	<source available="false">
+		<location type="">.</location>
+	</source>
+	<GroupOwner>hw</GroupOwner>
+	<RuntimeComponent>Neutrino RTOS</RuntimeComponent>
+
+
+	<contents>
+		<component id="cs42xx8" generated="true">
+			<location basedir="{os}/{cpu}/dll{.:endian}"
+				 runtime="true">deva-mixer-cs42xx8.so</location>
+		</component>
+	</contents>
+
+	<requires>
+		<part build="false" location="services/audio"/>
+	</requires>
+
+</module>

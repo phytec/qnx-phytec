@@ -1,0 +1,38 @@
+%C Driver for NXP i.MX8 Low Power SPI peripheral
+
+Syntax:
+  spi-master -d imx8lpspi [option[,option ...]] ... &
+
+Options (to override autodetected defaults):
+
+  base=address        Base address of SPI controller.
+  irq=num             IRQ of the SPI interface.
+  clock=num           SPI clock, default 66500000 Hz
+  dbt=num             Delay between transfers. In terms of half SPI shift clock. Default=0.
+  pcssck=num          Delay from the PCS assertion to the first SCK edge. In terms of half SPI shift clock. Default=0.
+  sckpcs=num          Delay from the last SCK edge to the PCS negation. In terms of half SPI shift clock. Default=0.
+  rxedma=num:num:num  Rx dma vector value. Both rxedma and txedma vectors must be defined to use dma mode.
+  txedma=num:num:num  Tx dma vector value. Both rxedma and txedma vectors must be defined to use dma mode.
+  slave=num           Enable slave functionality. Default=0 (disabled).
+  hwi=num             HWI table SPI peripheral index (0,1,2,3).
+  blksz=num           Block size for slave notify functionality. Default=0 (disabled). When disabled notify status is set after any amount of data received.
+  verbose=num         Verbose mode. Default=0 (disabled).
+  pincfg=num          Pin configuration. Default=0.
+                      0 - SDI is used for input data and SDO for output data.
+                      1 - SDI is used for both input and output data.
+                      2 - SDO is used for both input and output data.
+                      3 - SDO is used for input data and SDI for output data.
+  csnum=num           Default value for Slave CSx number (Default=0).
+  mode=num            Default value for SPI mode, for details see mode field from spi_cfg_t structure (Default = 408).
+  clock_rate=num      Default value for SPI clock rate, for details see clock_rate field from spi_cfg_t structure (Default = 5000000).
+
+Examples:
+  # Start SPI driver with base address, IRQ/DMA mode
+  spi-master -u0 -d imx8lpspi base=0x5A000000,clock=61539000,rxedma=0:0:448,txedma=0:1:449
+
+  spi-master -u0 -d imx8lpspi base=0x5A000000,irq=248,clock=61539000
+
+Notes:
+  EDMA functinality can be globaly enabled/disabled by EDMA_SUPPORT symbol in Makefile.
+  By default EDMA functionality is enabled.
+  Makefile location: /imxlpspi/aarch64/dll.le/Makefile

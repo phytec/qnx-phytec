@@ -1,0 +1,14 @@
+%C utility
+
+Syntax:
+    mmc_util [-d device_path]
+
+Options
+    -d device_path  Device to query. Default: /dev/emmc0
+    -h Query health report
+    -v Query device info report
+    -r Read ECSD
+
+Examples
+    mmc_util -h
+    mmc_util -d /dev/emmc0 -v

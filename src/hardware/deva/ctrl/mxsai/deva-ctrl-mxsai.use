@@ -1,0 +1,68 @@
+%C - SAI Sound driver for Freescale i.MX SOC family
+
+This is a DLL of the io-audio system.
+
+command:
+
+   io-audio -m pool_name=below4G,pool_size=<desired_pool_size_in_KB> -d mxsai-mx8
+
+audio controller driver options:
+
+saibase             = val           SAI controller index or base address
+tx_dma_chnl_type    = val           SAI TX DMA channel type
+rx_dma_chnl_type    = val           SAI RX DMA channel type
+tx_rate             = min[:max]     SAI audio Tx sample rate, supported rate is 8000, 16000, 32000, 48000
+rx_rate             = min[:max]     SAI audio Rx sample rate, supported rate is 8000, 16000, 32000, 48000
+clk_mode            = arg           SAI clock mode
+                                        Args: i2s_master, i2s_slave,
+i2c_bus             = val           I2C device used for codec (0,1,2)
+i2c_addr            = val           I2C address
+sys_clk             = val           Audio system clock (sys_clk/mclk)
+tx_voices           = val[:#...]    Number of playback channels/voices.
+rx_voices           = val[:#...]    Number of capture channels/voices
+                                        if a ':' separated list of voices is provided, the hardware stream
+                                        will split into multiple pseudo devices, each voice correpsonds to
+                                        one slot/channel on the data line (there is only one data line) in
+                                        continuous way, i.e., voice 0 of device 0 corresponds to slot 0,
+                                        voice 1 of device 0 corresponds to slot 1, voice 0 of device 1 corrresponds
+                                        to slot 2, voice 1 of device 1 corresponding to slot 3, etc.
+tx_sample_size      = val           Tx sample size in bits (16,32) or bytes (2,4)
+rx_sample_size      = val           Rx sample size in bits (16,32) or bytes (2,4)
+tx_slot_size        = val           Tx slot size(bits per word, 8 to 32), not smaller than sample size
+rx_slot_size        = val           Rx slot size(bits per word, 8 to 32), not smaller than sample size
+tx_protocol         = [i2s|pcm]     Tx audio protocol
+rx_protocol         = [i2s|pcm]     Rx audio protocol
+                                        (i2s: xclk_pol=0, rclk_pol=1, xfsync_pol=0, bit_delay=1)
+                                        (pcm: xclk_pol=1, rclk_pol=1, xfsync_pol=1, bit_delay=0)
+tx_clk_pol          = [0|1]         Tansmit clk polarity 0=falling edge, 1=rising edge
+rx_clk_pol          = [0|1]         Receive clk polarity 0=falling edge, 1=rising edge
+tx_sync_pol         = [0|1]         Tx Frame Sync polarity 0=active low, 1=active high
+rx_sync_pol         = [0|1]         Rx Frame Sync polarity 0=active low, 1=active high
+tx_bit_delay        = [0|1]         Tx Delay between frame sync edge and fisrt data bit
+rx_bit_delay        = [0|1]         Rx Delay between frame sync edge and fisrt data bit
+tx_sync_size        = [bit|word]    Tx Size of frame sync pulse
+rx_sync_size        = [bit|word]    Rx Size of frame sync pulse
+tx_frag_size        = val           DMA fragment/block size. Only used if pseudo devices enabled
+rx_frag_size        = val           DMA fragment/block size. Only used if pseudo devices enabled
+tx_nslots           = val           Number of Tx slots in the frame (not smaller than total number of tx voices)
+rx_nslots           = val           Number of Rx slots in the frame (not smaller than total number of rx voices)
+tx_msel             = val           Tx MCLK select. Chip specific information. See RM.
+rx_msel             = val           Rx MCLK select. Chip specific information. See RM.
+sync_mode           = val           TxRx synchronization mode.
+                                        Args: async, sync
+                                            async - Rx and Tx are asynchronous
+                                            sync - RX is synchronized by Tx (default)
+Note:
+1. for 64-bit systems, use the pool_name and pool_size global options to ensure that DMA buffer allocation
+uses memory below 4 GB address space.
+
+2. Specifying a sample rate range (rate=min:max) is only supported when
+the SAI is configured to be the clock master (clk_mode=i2s_master).
+
+3. Tx and Rx can work in synchronous or asynchronous mode. In asynchronous mode, Tx and Rx can have their separate set of settings
+including bit clock, frame sync. In synchronous mode Rx shares the TX bit clock, frame sync and transmitter enable.
+Other configurations can be set separately for transmitter and receiver.
+
+4. If tx_slot_size or rx_slot_size is not configured from command line, tx_sample_size or rx_sample_size is used to
+configure tx_slot_size or rx_slot_size respectively.
+
