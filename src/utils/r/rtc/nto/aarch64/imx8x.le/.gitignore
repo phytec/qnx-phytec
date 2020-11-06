@@ -1,0 +1,3 @@
+rtc-imx8x
+*.o
+*.pinfo

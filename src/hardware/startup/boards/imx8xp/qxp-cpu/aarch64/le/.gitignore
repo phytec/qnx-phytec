@@ -1,0 +1,4 @@
+startup-imx8qxp-cpu
+*.pinfo
+*.map
+*.o

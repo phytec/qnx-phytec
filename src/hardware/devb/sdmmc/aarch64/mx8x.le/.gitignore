@@ -1,0 +1,4 @@
+devb-sdmmc-mx8x
+*.o
+*.map
+*.pinfo

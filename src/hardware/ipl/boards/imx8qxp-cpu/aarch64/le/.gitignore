@@ -1,0 +1,4 @@
+ipl-imx8qxp-cpu
+*.o
+*.pinfo
+*.map
