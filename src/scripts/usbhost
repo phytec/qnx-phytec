@@ -1,0 +1,27 @@
+echo Stopping old USB stack...
+for i in devb-umass devu-umass_client-block io-usb-otg
+do
+    ps -ef|grep -v grep | grep -q $i && {
+        slay $i
+        sleep 2
+        ps -ef|grep -v grep | grep -q $i && {
+            echo Unable to stop $i
+            exit 1
+        }
+    }
+done
+
+echo Starting USB in host/DFP mode
+
+io-usb-otg -dhcd-ehci-mx28 ioport=0x5B0D0100,irq=299,no_stream,phy=0x5B100000 \
+	-dhcd-imx8-xhci ioport=0x5b130000,irq=303
+waitfor /dev/usb/io-usb-otg 4
+waitfor /dev/usb/devu-hcd-ehci-mx28.so 4
+waitfor /dev/usb/devu-hcd-imx8-xhci.so 4
+
+if [ "$1" != "ms" ]; then
+    exit 0
+fi
+
+echo Starting driver for USB Mass Storage interface
+devb-umass cam pnp dos exe=all disk name=umass

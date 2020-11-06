@@ -1,0 +1,36 @@
+if [ -e "/dev/hd10" -o -e "/dev/hd10t6" ]; then
+    echo "/dev/hd10 devices already exist.  Unable to create RAM disk."
+    exit 1
+fi
+
+if [ -e /fs/ms ]; then
+    echo "Mount point /fs/ms already exists.  Unable to create RAM disk."
+    exit 1
+fi
+
+# Determine the size in 512 byte blocks
+if [ "$1" = "1M" ]; then
+    size=2048
+elif [ "$1" = "2M" ]; then
+    size=4096
+elif [ "$1" = "4M" ]; then
+    size=8192
+elif [ "$1" = "8M" ]; then
+    size=16384
+elif [ "$1" = "16M" ]; then
+    size=32768
+else
+    echo "Usage: $0 1M | 2M | 4M | 8M | 16M"
+    echo "Creates a RAM disk of the specified size with a DOS filesystem"
+    exit 1
+fi
+
+devb-ram ram capacity=$size,nodinit,cache=512k disk name=hd@10
+waitfor /dev/hd10
+fdisk /dev/hd10 add -t 6
+mount -e /dev/hd10
+waitfor /dev/hd10t6
+mkdosfs /dev/hd10t6
+
+mount -t dos /dev/hd10t6 /fs/ms
+echo "Created DOS RAM disk and mounted it at /fs/ms"

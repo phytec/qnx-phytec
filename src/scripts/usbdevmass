@@ -1,0 +1,28 @@
+if [ ! -b /dev/hd10 ]; then
+    echo "The RAM disk /dev/hd10 must be created first.  Use ramdisk."
+    exit
+fi
+
+echo Stopping old USB stack...
+for i in devb-umass devu-umass_client-block io-usb-otg
+do
+    ps -ef|grep -v grep | grep -q $i && {
+        slay $i
+        sleep 2
+        ps -ef|grep -v grep | grep -q $i && {
+            echo Unable to stop $i
+            exit 1
+        }
+    }
+done
+
+echo Starting USB in device/UFP mode as a USB Mass Storage device
+
+io-usb-otg  -ddcd-usbumass-mx8-ci ioport=0x5B0D0000,irq=299 \
+		-n /dev/otg/io-usb-otg
+waitfor /dev/otg/io-usb-otg 4
+waitfor /dev/otg/devu-dcd-usbumass-mx8-ci.so 4
+
+devu-umass_client-block -l lun=0,devno=1,iface=0,fname=/dev/hd10 \
+	-s /dev/otg/io-usb-otg
+ulink_ctrl -l 1 -s /dev/otg/io-usb-otg
