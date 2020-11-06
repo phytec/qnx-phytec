@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<module name="usbselect">
+	<type>Element</type>
+	<classification>Runtime</classification>
+
+        <description>
+                <short>USB port select utility</short>
+                <abstract>
+                        <![CDATA[Used to select Type-A host or micro B OTG port.]]>
+                </abstract>
+        </description>
+
+	<supports>
+		<availability ref="ostargets"/>
+	</supports>
+
+	<source available="false">
+		<location>.</location>
+	</source>
+
+     <GroupOwner>hw</GroupOwner>
+     <RuntimeComponent>Neutrino RTOS</RuntimeComponent>
+
+
+	<contents>
+		<component id="usbselect" generated="true">
+			<location basedir="{os}/{cpu}/{o|endian}"
+				runtime="true">usbselect</location>
+		</component>
+   </contents>
+
+   <requires>
+      <part build="true" location="lib/util"/>
+   </requires>
+
+</module>
