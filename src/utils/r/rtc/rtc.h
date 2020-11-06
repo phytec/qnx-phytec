@@ -184,6 +184,10 @@ extern int init_m41t6x(struct chip_loc *chip, char *argv[]);
 extern int get_m41t6x(struct tm *tm, int cent_reg);
 extern int set_m41t6x(struct tm *tm, int cent_reg);
 
+extern int init_rv3028(struct chip_loc *chip, char *argv[]);
+extern int get_rv3028(struct tm *tm, int cent_reg);
+extern int set_rv3028(struct tm *tm, int cent_reg);
+
 extern int init_s35390(struct chip_loc *chip, char *argv[]);
 extern int get_s35390(struct tm *tm, int cent_reg);
 extern int set_s35390(struct tm *tm, int cent_reg);

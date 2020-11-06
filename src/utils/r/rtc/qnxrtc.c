@@ -180,6 +180,7 @@ static struct rtc_desc clocks[] ={
 	{ "m48t37",		init_m48t37, get_m48t37, set_m48t37 },
 	{ "m48t5x",		init_m48t5x, get_m48t5x, set_m48t5x },
 	{ "m41t6x",		init_m41t6x, get_m41t6x, set_m41t6x },
+	{ "rv3028",		init_rv3028, get_rv3028, set_rv3028 },
 	{ "s35390",		init_s35390, get_s35390, set_s35390 },
 	{ "mc9s08dz60",		init_mc9s08dz60, get_mc9s08dz60, set_mc9s08dz60 },
 	{ "max8925",		init_max8925, get_max8925, set_max8925 },
