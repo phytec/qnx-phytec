@@ -1,0 +1,23 @@
+%C - Mixer DLL for the SGTL5000 codec
+
+This is a DLL of the io-audio system.
+
+Configuration file options:
+      sgtl5000_i2cdev=num                      I2C device used (0,1,2)
+      sgtl5000_adr0cs=num                      CTRL_ADDR_CS logic level (0,1)
+      sgtl5000_mclk=num                        External SYS_MCLK (default: 12288000)
+      sgtl5000_samplerate=num                  Sample rate of the codec (default: 48000)
+      sgtl5000_input_mux=<line_in|mic_in>      Input mux selector (default: line_in)
+
+All codec options are to be included under the [ctrl] section for the audio card the
+mixer DLL is to be mounted under.
+
+[ctrl]
+name=mxsai-mx8
+options=saibase=1,tx_msel=1,rx_msel=1,tx_sample_size=4,rx_sample_size=4
+mixer_dll=sgtl5000
+sgtl5000_i2cdev=1
+sgtl5000_adr0cs=0
+sgtl5000_mclk=12288000
+sgtl5000_samplerate=48000
+sgtl5000_input_mux=line_in
