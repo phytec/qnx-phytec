@@ -44,6 +44,9 @@
  * the MDC setup is correct on each read/write access.
  */
 
+static void mmd_write_reg(mx6q_dev_t *mx6q, int device, int reg, int val);
+static uint16_t mmd_read_reg(mx6q_dev_t *mx6q, int device, int reg);
+
 static uint16_t
 mx6q_mii_read_raw (void *handle, uint8_t cl, uint8_t phy_add, uint8_t reg_add)
 {
@@ -456,7 +459,7 @@ static void mx6_nxp_phy_state (mx6q_dev_t *mx6q)
  */
 static void mx6q_ti_phy_state(mx6q_dev_t *mx6q)
 {
-    uint16_t        val;
+    uint16_t        val, physts;
     nic_config_t    *cfg;
     struct ifnet    *ifp;
 
@@ -468,6 +471,8 @@ static void mx6q_ti_phy_state(mx6q_dev_t *mx6q)
     ifp = &mx6q->ecom.ec_if;
     /* Read BMSR Register 0x0001 – Basic Mode Status Register */
     val = mx6q_mii_read(mx6q,  cfg->phy_addr, 0x1);
+    /* Read PHYSTS Register 0x0011 – PHY Status Register */
+    physts = mx6q_mii_read(mx6q,  cfg->phy_addr, MII_DP83867_PHYSTS);
     /* BMSR_LINK_STATUS */
     if ((cfg->flags & NIC_FLAG_LINK_DOWN) && (val & BMSR_LINK_STATUS)) {
         /* Link was down and is now up */
@@ -476,8 +481,20 @@ static void mx6q_ti_phy_state(mx6q_dev_t *mx6q)
         }
         cfg->flags &= ~NIC_FLAG_LINK_DOWN;
         if_link_state_change(ifp, LINK_STATE_UP);
-        cfg->media_rate = 100 * 1000L;
-        cfg->duplex = 1;
+	switch((physts >> 14) & 3)
+	{
+	case 0:
+		cfg->media_rate = 10 * 1000L;
+		break;
+	case 1:
+		cfg->media_rate = 100 * 1000L;
+		break;
+	case 2:
+		cfg->media_rate = 1000 * 1000L;
+		break;
+	}
+        cfg->duplex = (physts & 0x2000) ? 1 : 0;
+        mx6q_speeduplex(mx6q);
     } else if (((cfg->flags & NIC_FLAG_LINK_DOWN) == 0) && ((val & BMSR_LINK_STATUS) == 0)) {
         /* Link was up and is now down */
         if (cfg->verbose) {
@@ -574,6 +591,8 @@ static void mx6_br_phy_state(mx6q_dev_t *mx6q)
         }
         cfg->flags &= ~NIC_FLAG_LINK_DOWN;
         if_link_state_change(ifp, LINK_STATE_UP);
+        cfg->media_rate = 100 * 1000L;
+        cfg->duplex = 1;
         // if link up again then arm callout to check sqi
         if (cfg->flags & ~NIC_FLAG_LINK_DOWN)
             callout_msec(&mx6q->sqi_callout, MX6Q_SQI_SAMPLING_INTERVAL * 1000, mx6q_BRCM_SQI_Monitor, mx6q);
@@ -625,6 +644,7 @@ int mx6_is_br_phy (mx6q_dev_t *mx6q) {
     case TEXAS_INSTRUMENTS:
         switch (mx6q->mdi->PhyData[PhyAddr]->Model) {
             case DP83TC811:
+            case DP83867:
                 is_br = 1;
                 break;
         }
@@ -1097,6 +1117,85 @@ static int mx6q_ti_dp83tc811_phy_init(mx6q_dev_t *mx6q)
 
 }
 
+/**
+ * Initialization of TI DP83867 PHY.
+ * Code based on the Linux driver drivers/net/phy/dp83867.c
+ *
+ * @param   mx6q   Pointer to device data structure.
+ * @return  Execution status.
+ */
+static int mx6q_ti_dp83867_phy_init(mx6q_dev_t *mx6q)
+{
+    int phy_addr;
+    uint16_t val, bs;
+
+    if (mx6q->cfg.verbose > 3) {
+        slogf(_SLOGC_NETWORK, _SLOG_INFO, "%s()...", __FUNCTION__);
+    }
+
+    phy_addr = mx6q->cfg.phy_addr;
+
+    /* Issue a software restart */
+    val = mx6q_mii_read(mx6q, phy_addr, DP83867_CTRL);
+    val |= DP83867_SW_RESTART;
+    mx6q_mii_write(mx6q, phy_addr, DP83867_CTRL, val);
+
+    nanospin_ns(1000);
+
+    /* FIFO depth 8 bytes/nibbles */
+    val = mx6q_mii_read(mx6q, phy_addr, MII_DP83867_PHYCTRL);
+    val &= ~DP83867_PHYCR_FIFO_DEPTH_MASK;
+    val |= (DP83867_PHYCR_FIFO_DEPTH_8_B_NIB << DP83867_PHYCR_FIFO_DEPTH_SHIFT);
+    /* write is below */
+
+    /*
+     * Ensure that strapping hasn't incorrectly put the PHY into some
+     * internal test mode (marked reserved in the datasheet).
+     */
+    bs = mmd_read_reg(mx6q, DP83867_DEVADDR, DP83867_STRAP_STS1);
+    if (bs & DP83867_STRAP_STS1_RESERVED) {
+	val &= ~DP83867_PHYCR_RESERVED_MASK;
+    }
+    mx6q_mii_write(mx6q, phy_addr, MII_DP83867_PHYCTRL, val);
+
+    /* This corresponds to "phy-mode = rgmii-id;" used in Linux */
+    val = mmd_read_reg(mx6q, DP83867_DEVADDR, DP83867_RGMIICTL);
+    val |= DP83867_RGMII_TX_CLK_DELAY_EN | DP83867_RGMII_RX_CLK_DELAY_EN |
+           DP83867_RGMII_EN;
+    mmd_write_reg(mx6q, DP83867_DEVADDR, DP83867_RGMIICTL, val);
+
+    /* 2ns clock delay */
+    val = (DP83867_RGMIIDCTL_2_00_NS |
+	  (DP83867_RGMIIDCTL_2_00_NS << DP83867_RGMII_TX_CLK_DELAY_SHIFT));
+    mmd_write_reg(mx6q, DP83867_DEVADDR, DP83867_RGMIIDCTL, val);
+
+    /* Disable port mirroring, test mode 1 */
+    val = mmd_read_reg(mx6q, DP83867_DEVADDR, DP83867_CFG4);
+    val &= ~(DP83867_CFG4_PORT_MIRROR_EN | DP83867_CFG4_INT_TEST_MODE_1);
+    mmd_write_reg(mx6q, DP83867_DEVADDR, DP83867_CFG4, val);
+
+    /* Disable FORCE_LINK_GOOD */
+    val = mx6q_mii_read(mx6q, phy_addr, MII_DP83867_PHYCTRL);
+    if (val & MII_DP83867_PHYCTRL_FORCE_LINK_GOOD) {
+	val &= ~(MII_DP83867_PHYCTRL_FORCE_LINK_GOOD);
+	mx6q_mii_write(mx6q, phy_addr, MII_DP83867_PHYCTRL, val);
+    }
+
+    /* Select clock output: Use Channel A transmit clock */
+    val = mmd_read_reg(mx6q, DP83867_DEVADDR, DP83867_IO_MUX_CFG);
+    val &= ~(DP83867_IO_MUX_CFG_CLK_O_SEL_MASK);
+    val |= (DP83867_IO_MUX_CFG_CHA_TCLK << DP83867_IO_MUX_CFG_CLK_O_SEL_SHIFT);
+    mmd_write_reg(mx6q, DP83867_DEVADDR, DP83867_IO_MUX_CFG, val);
+
+    /* Change LED polarity */
+    val = mx6q_mii_read(mx6q, phy_addr, MII_DP83867_LEDCR2);
+    val &= ~(MII_DP83867_LEDCR2_LED_2_POLARITY |
+		MII_DP83867_LEDCR2_LED_0_POLARITY);
+    mmd_write_reg(mx6q, DP83867_DEVADDR, MII_DP83867_LEDCR2, val);
+
+    return 0;
+}
+
 //
 // Initialization routine for the NXP TJA1100 PHY
 //
@@ -1441,6 +1540,11 @@ static void mx6_phy_init (mx6q_dev_t *mx6q)
                     log(LOG_INFO, "Detected DP83TC811 PHY");
                 mx6q_ti_dp83tc811_phy_init(mx6q);
             break;
+            case DP83867:
+                if (cfg->verbose > 3)
+                    slogf(_SLOGC_NETWORK, _SLOG_INFO, "Detected DP83867 PHY");
+                mx6q_ti_dp83867_phy_init(mx6q);
+                break;
         default:
             break;
         }
@@ -1470,6 +1574,17 @@ static void mmd_write_reg(mx6q_dev_t *mx6q, int device, int reg, int val)
     mx6q_mii_write(mx6q, phy_idx, 0x0e, reg);
     mx6q_mii_write(mx6q, phy_idx, 0x0d, (1 << 14) | device);
     mx6q_mii_write(mx6q, phy_idx, 0x0e, val);
+}
+
+static uint16_t mmd_read_reg(mx6q_dev_t *mx6q, int device, int reg)
+{
+    nic_config_t *cfg = &mx6q->cfg;
+    int     phy_idx = cfg->phy_addr;
+
+    mx6q_mii_write(mx6q, phy_idx, 0x0d, device);
+    mx6q_mii_write(mx6q, phy_idx, 0x0e, reg);
+    mx6q_mii_write(mx6q, phy_idx, 0x0d, (1 << 14) | device);
+    return mx6q_mii_read(mx6q, phy_idx, 0x0e);
 }
 
 static int mx6_ksz9031_phy_init(mx6q_dev_t *mx6q)
