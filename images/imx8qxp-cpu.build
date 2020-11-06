@@ -1,8 +1,8 @@
-###################################################################################
+################################################################################
 #
-# NXP i.MX8QXP CPU CARD Board, based on ARM Cortex A35 Core Platform
+# The Phytec PCM-065 i.MX8QXP SoM paired with the PCM-942 carrier board
 #
-####################################################################################
+################################################################################
 #
 [image=0x82300000]
 [virtual=aarch64le,binary +compress] .bootstrap = {
@@ -18,7 +18,7 @@
     # Initialise the console
     procmgr_symlink ../../proc/boot/ldqnx-64.so.2 /usr/lib/ldqnx-64.so.2
 
-    display_msg Welcome to QNX Neutrino 7.1.0 on the NXP i.MX8QXP CPU Board (ARM Cortex-A35)
+    display_msg Welcome to QNX710 on the Phytec PCM-065 i.MX8QX SoM
 
     # Ensure that all serial debug and telnet ksh sessions have environment variables set
     ENV=/etc/profile
@@ -49,13 +49,6 @@
     wdtkick-sc-imx8 -t 5000
 
     #######################################################################
-    ## RTC utility
-    ## It use the sc-imx8 utility
-    #######################################################################
-    display_msg Setting OS clock from RTC
-    rtc-imx8x hw
-
-    #######################################################################
     ## Random service
     #######################################################################
     display_msg "Starting random service ..."
@@ -76,69 +69,74 @@
     reopen /dev/ser1
 
     ## LPUART1 - Uncomment following three lines to initialize LPUART1
+    ## This is used for either Bluetooth or an RS-232 connection on the
+    ## lower port of X53.  It is also available on header X59.
     # display_msg Starting Serial driver (/dev/ser2)...
     # devc-sermx8 -F -S -u 2 0x5A070000,258
     # waitfor /dev/ser2 4
 
     ## LPUART2 - Uncomment following three lines to initialize LPUART2
+    ## This is connected to header X59 if switch S6 is set to UART.
     # display_msg Starting Serial driver (/dev/ser3)...
     # devc-sermx8 -F -S -u 3 0x5A080000,259
     # waitfor /dev/ser3 4
 
-    ## LPUART3 - Uncomment following three lines to initialize LPUART3
-    # display_msg Starting Serial driver (/dev/ser4)...
-    # devc-sermx8 -F -S -u 4 0x5A090000,260
-    # waitfor /dev/ser4 4
-
     #######################################################################
     ## I2C driver
     #######################################################################
-    display_msg Starting I2C1,4,6,7,10 driver (/dev/i2c1,4,6,7,10)...
+    display_msg Starting I2C
     # LSIO I2C1
     i2c-imx8 -v -I1 --u 1
+    waitfor /dev/i2c1
     # MIPI DSI1 I2C0
-    i2c-imx8 -v -t500 -I4 --u 4
+    # i2c-imx8 -v -t500 -I4 --u 4
+    # waitfor /dev/i2c4
     # MIPI CSI0 I2C0
-    i2c-imx8 -v -I6 --u 6
+    # i2c-imx8 -v -I6 --u 6
+    # waitfor /dev/i2c6
     # MIPI DSI0 I2C0
-    i2c-imx8 -v -t500 -I7 --u 7
+    # i2c-imx8 -v -t500 -I7 --u 7
     # Cortex M4 I2C0
-    i2c-imx8 -v -I10 --u10
+    # i2c-imx8 -v -I10 --u10
+    # waitfor /dev/i2c10
+
+    #######################################################################
+    ## RTC utility
+    ## To use the sc-imx8 utility to access the RTC in the iMX8X, use:
+    ##     rtc-imx8x hw
+    ## For that to keep proper time, JP3 must be installed on the CB.
+    ## To use the RV-3028 RTC on the CB, use:
+    ##     rtc-imx8x rv3028
+    #######################################################################
+    display_msg Setting OS clock from RTC
+    rtc-imx8x rv3028
 
     #######################################################################
     ## SPI driver
     #######################################################################
-    # Audio slot 1
+    # OSPI
     display_msg Starting SPI0 driver (/dev/spi0)...
     spi-master -u0 -d imx8lpspi hwi=0,dbt=1,pcssck=1,sckpcs=1,rxedma=0:0:448,txedma=0:1:449
-    # Uncomment when you want to use SPI in slave mode.
-    # spi-slave -u0 -d imx8lpspi hwi=0,slave=1
-
-    # ENET connector
-    display_msg Starting SPI3 driver (/dev/spi3)...
-    spi-master -u3 -d imx8lpspi hwi=3,dbt=1,pcssck=1,sckpcs=1,rxedma=0:6:454,txedma=0:7:455
-    # Uncomment when you want to use SPI in slave mode.
-    # spi-slave -u3 -d imx8lpspi hwi=3,slave=1
 
     #######################################################################
     ## FlexCAN0 peripheral used; Bitrate = 250k
     #######################################################################
-    display_msg Starting CAN driver (/dev/can0/*)...
-    dev-can-mx7x-mx8x -b250K can0
+    # display_msg Starting CAN driver (/dev/can0/*)...
+    # dev-can-mx7x-mx8x -b250K can0
 
     #######################################################################
     ## FlexCAN1 peripheral used; Bitrate = 250k
     #######################################################################
     # Uncomment next two lines to initialize FlexCAN 1 peripheral.
-    display_msg Starting CAN driver (/dev/can1/*)...
-    dev-can-mx7x-mx8x -b250K can1
+    # display_msg Starting CAN driver (/dev/can1/*)...
+    # dev-can-mx7x-mx8x -b250K can1
 
     #######################################################################
     ## FlexCAN2 peripheral used; Bitrate = 250k
     #######################################################################
     # Uncomment next two lines to initialize FlexCAN 2 peripheral.
-    display_msg Starting CAN driver (/dev/can2/*)...
-    dev-can-mx7x-mx8x -b250K can2
+    # display_msg Starting CAN driver (/dev/can2/*)...
+    # dev-can-mx7x-mx8x -b250K can2
 
     #######################################################################
     ## SD memory card / eMMC driver
@@ -155,13 +153,24 @@
     # mkdosfs /dev/emmc0t11
     # mount -t dos /dev/emmc0t11 /fs/emmc
 
-    # SD card on CPU board
+    #######################################################################
+    ## SD Card or SDIO/WiFi driver on SD1
+    #######################################################################
+    # The SDHC1 interface is switch selectable for either SD card or
+    # WiFi (SDIO) use.  Enable only one of the following:
+    #
+    #              ---- SD Card ----
     display_msg Starting SD1 memory card driver (/dev/sdx)...
     devb-sdmmc-mx8x cam pnp,cache,quiet blk ra=64k:2048k,memory="sysram&below4G:sysram",maxio=256,cache=4m disk name=sd sdio idx=1,bs=vdd1_8:cd=0x5D0C0000^22^694,verbose=1
-    # waitfor /dev/sd0 3
+    waitfor /dev/sd0 3
 
-    # Example of mounting of the dos partition on the sd card to /fs/sd directory.
+    # Example of mounting of the dos partition on the sd card to /fs/sd
+    # directory:
     # mount -t dos /dev/sd0t12 /fs/sd
+
+    #              ---- WiFi/SDIO ----
+    #display_msg Starting SDIO driver...
+    #devb-sdmmc-mx8x cam pnp,cache,quiet blk ra=64k:2048k,memory="sysram&below4G:sysram",maxio=256,cache=4m disk name=sdio sdio idx=1,bs=vdd1_8:bw=4:nocd,verbose=1
 
     ###########################################################################
     ## Micron MT35XU512 driver.
@@ -177,7 +186,12 @@
     ## Network driver
     #######################################################################
     display_msg "Starting Network driver..."
-    sh -c "io-pkt-v6-hc -dmx8xp deviceindex=0,mac=`genmac-random -m` -ptcpip pkt_typed_mem=below4G,mclbytes=4096"
+    #ETH0 only:
+    #sh -c "io-pkt-v6-hc -i0 -dmx8xp unit=0,phy=1,deviceindex=0,mac=`genmac-random -m` -ptcpip pkt_typed_mem=below4G,mclbytes=4096"
+    #ETH1 only:
+    #sh -c "io-pkt-v6-hc -i1 -dmx8xp unit=1,phy=3,deviceindex=1,mac=`genmac-random -m` -ptcpip pkt_typed_mem=below4G,mclbytes=4096"
+    #ETH0 and ETH1:
+    sh -c "io-pkt-v6-hc -i0 -dmx8xp unit=0,phy=1,deviceindex=0,mac=`genmac-random -m` -dmx8xp unit=1,phy=3,deviceindex=1,mac=`genmac-random -m` -ptcpip pkt_typed_mem=below4G,mclbytes=4096"
 
     # Ensure that TCP/IP fec0 interface is available before the script continue
     if_up -p fec0
@@ -188,20 +202,30 @@
     # Set static IP if needed
     # ifconfig fec0 10.171.65.232
 
+    pps
+    waitfor /pps
+    mkdir -p /pps/services/hwinfo
+    mkdir -p /pps/usb/debug
+
+    # Select either the typea or otg connection for the first USB port:
+    usbselect otg
+
     #######################################################################
     ## USB2.0 OTG1 & USB3.0 OTG2
+    ## The startup of USB is commented out to allow either host or device
+    ## mode to be started on the command line as appropriate.  See the
+    ## scripts usbhost and usbdevmass.
+    ## USB may instead be started here by uncommenting the appropriate
+    ## sections below.
     #######################################################################
-    display_msg Starting OTG1 & OTG2 controller in the host mode (/dev/usb/*)....
-    io-usb-otg -dhcd-ehci-mx28 ioport=0x5B0D0100,irq=299,no_stream,phy=0x5B100000 -dhcd-imx8-xhci ioport=0x5b130000,irq=303
-    waitfor /dev/usb/io-usb-otg 4
-    waitfor /dev/usb/devu-hcd-ehci-mx28.so 4
-    waitfor /dev/usb/devu-hcd-imx8-xhci.so 4
+    # display_msg Starting USB in host/DFP mode
+    # io-usb-otg -dhcd-ehci-mx28 ioport=0x5B0D0100,irq=299,no_stream,phy=0x5B100000 -dhcd-imx8-xhci ioport=0x5b130000,irq=303
+    # waitfor /dev/usb/io-usb-otg 4
+    # waitfor /dev/usb/devu-hcd-ehci-mx28.so 4
+    # waitfor /dev/usb/devu-hcd-imx8-xhci.so 4
 
-    display_msg Launching devb-umass for /dev/usb/* ...
-    devb-umass cam pnp dos exe=all disk name=umass
-
-    display_msg Starting USB Type-C Port Manager....
-    tcpm-imx8qxp &
+    # display_msg Launching devb-umass for /dev/usb/* ...
+    # devb-umass cam pnp dos exe=all disk name=umass
 
     ##### Example of Mass Storage device (USB stick) #####
     # Step 1 - Create a ram disk
@@ -213,8 +237,8 @@
     # mkdosfs /dev/hd10t6
 
     # Step 2 - Start device stack
-    # display_msg Starting USB OTG1 controller in the device mode - USB stick example (/dev/usb/*)...
-    # io-usb-otg -ddcd-usbumass-mx8-ci ioport=0x5B0D0000,irq=299 -n /dev/otg/io-usb-otg
+    # display_msg Starting USB in device/UFP mode - USB stick example (/dev/usb/*)...
+    # io-usb-otg  -ddcd-usbumass-mx8-ci ioport=0x5B0D0000,irq=299 -n /dev/otg/io-usb-otg
     # waitfor /dev/otg/io-usb-otg 4
     # waitfor /dev/otg/devu-dcd-usbumass-mx8-ci.so 4
 
@@ -261,10 +285,11 @@
     pci-server --bus-scan-limit=1 -c &
     waitfor /dev/pci
 
-    ###########################################################################################
+    #######################################################################
     ## DVFS support
-    ## Use dvfs_client to adjust minimum level of performance if necessary (refer to dvfs docs)
-    ###########################################################################################
+    ## Use dvfs_client to adjust minimum level of performance if necessary
+    ## (refer to dvfs docs)
+    #######################################################################
     dvfsmgr-imx8x -c /etc/dvfs/config/imx8/dvfs_imx8qxp.conf -o /etc/dvfs/config/imx8/dvfs_pwrtbl_imx8qxp.conf -v
 
     # Start the main shell
@@ -296,22 +321,22 @@ libslog2.so
 libslog2parse.so
 libslog2shim.so
 libpps.so
-libnxp_imx8_sci.so
+libnxp_imx8_sci.so=../src/lib/hw_vendor/nxp/imx8/sci/aarch64/so.le/libnxp_imx8_sci.so
 libz.so
 libssl.so
 
 ###########################################################################
 ## EDMA
 ###########################################################################
-libdma-edma.so
+libdma-edma.so=../src/lib/dma/edma/aarch64/so-le/libdma-edma.so
 
 ###########################################################################
-## Uncomment for LPSPI
+## LPSPI
 ###########################################################################
-spi-imx8lpspi.so
+spi-imx8lpspi.so=../src/hardware/spi/imx8lpspi/aarch64/dll.le/spi-imx8lpspi.so
 
 ###########################################################################
-## uncomment for BLOCK driver
+## BLOCK driver
 ## substitute cam-xxx.so and fs-xxx.so with the cam drivers and filesystems
 ## required
 ###########################################################################
@@ -329,17 +354,15 @@ libncursesw.so
 ###########################################################################
 ## AUDIO
 ###########################################################################
-deva-ctrl-mxesai-mx8.so
-deva-ctrl-mxsai-mx8.so
+deva-ctrl-mxsai-mx8.so=../src/hardware/deva/ctrl/mxsai/nto/aarch64/dll.le.mx8/deva-ctrl-mxsai-mx8.so
 deva-util-restore.so
-deva-mixer-cs42xx8.so
-deva-mixer-wm8960.so
+deva-mixer-sgtl5000.so=../src/hardware/deva/mixer/sgtl5000/nto/aarch64/dll.le/deva-mixer-sgtl5000.so
 libasound.so
 
 # Executables
 [data=c]
-devc-sermx8
-devc-sermx8-dma
+devc-sermx8=../src/hardware/devc/sermx8/aarch64/le/devc-sermx8
+devc-sermx8-dma=../src/hardware/devc/sermx8/aarch64/le.dma/devc-sermx8-dma
 
 ###########################################################################
 ## qansi terminal
@@ -351,10 +374,10 @@ devc-sermx8-dma
 
 
 ###########################################################################
-## uncomment for NETWORK driver
+## NETWORK driver
 ###########################################################################
 libsocket.so
-devnp-mx8xp.so
+devnp-mx8xp.so=../src/hardware/devnp/mx6x/aarch64/mx8xp.dll.le/devnp-mx8xp.so
 librpc.so
 libcrypto.so
 libqcrypto.so
@@ -385,6 +408,20 @@ hostname
 omshell
 route
 
+find
+tail
+strings
+isendrecv
+ps
+iperf3
+od
+cksum
+shasum
+time
+cut
+sync
+expr
+
 ###########################################################################
 ## libqcrypto support
 ###########################################################################
@@ -403,13 +440,13 @@ dhclient
 ###########################################################################
 ## uncomment for CAN driver
 ###########################################################################
-dev-can-mx7x-mx8x
-canctl
+# dev-can-mx7x-mx8x=../src/hardware/can/mx7x/aarch64/mx8x.le/dev-can-mx7x-mx8x
+# canctl
 
 ###########################################################################
 ## DVFS support
 ###########################################################################
-dvfsmgr-imx8x
+dvfsmgr-imx8x=../src/hardware/dvfsmgr/aarch64/imx8x.le/dvfsmgr-imx8x
 dvfs_client
 /etc/dvfs/config/imx8/dvfs_imx8qxp.conf=../install/etc/dvfs/config/imx8/dvfs_imx8qxp.conf
 /etc/dvfs/config/imx8/dvfs_pwrtbl_imx8qxp.conf=../install/etc/dvfs/config/imx8/dvfs_pwrtbl_imx8qxp.conf
@@ -417,10 +454,10 @@ dvfs_client
 #######################################################################
 ## RTC utility
 #######################################################################
-rtc-imx8x
+rtc-imx8x=../src/utils/r/rtc/nto/aarch64/imx8x.le/rtc-imx8x
 
 ###########################################################################
-## uncomment for REMOTE_DEBUG
+## REMOTE_DEBUG
 ###########################################################################
 devc-pty
 qconn
@@ -448,9 +485,12 @@ qconn
 # NOTE: The following is very insecure and must not be used in a production
 #       environment.  This allows telnet access to root without a password!
 #       Even with a password this is not secure as telnet passes the password
-#       unencrypted over the network.  NO NOT USE THIS IN AN UNSECURED ENVIRONMENT!
-#       This configuration is only meant for initial setup and testing of a new board.
-#       If you need network access use a secure protocol like ssh (e.g. OpenSSH or Drop Bear).
+#       unencrypted over the network.  NO NOT USE THIS IN AN UNSECURED
+#       ENVIRONMENT!
+#       This configuration is only meant for initial setup and testing of a
+#       new board.
+#       If you need network access use a secure protocol like ssh (e.g.
+#       OpenSSH or Drop Bear).
 #
 /etc/inetd.conf = {
 telnet stream tcp nowait root /usr/sbin/telnetd in.telnetd
@@ -518,10 +558,10 @@ qnxuser:x:qnxuser
 
 /etc/system/config/audio/io_audio_sai.conf = {
 ###########
-# Note: When running with num_tx_aif == 1 then we DMA directly from the PCM buffer
-# (default max size 256kb). If num_tx_aif > 1 then we DMA from an internal ping-pong
-# buffer (tx_frag_size * 2, default = 4KB*2). Same applies for rx.
-#
+# Note: When running with num_tx_aif == 1 then we DMA directly from the PCM
+# buffer (default max size 256kb). If num_tx_aif > 1 then we DMA from an
+# internal ping-pong buffer (tx_frag_size * 2, default = 4KB*2). Same applies
+# for rx.
 ###########
 [global]
 pool_name=below4G
@@ -530,78 +570,33 @@ pool_size=512
 [ctrl]
 name=mxsai-mx8
 options=saibase=1,clk_mode=slave,tx_slot_size=32,rx_slot_size=32,tx_msel=1,rx_msel=1,tx_sample_size=4,rx_sample_size=4,tx_rate=48000,rx_rate=48000
-mixer_dll=wm8960
-wm8960_mclk=24576000
-wm8960_adclrc=1
-wm8960_i2cdev=10
-wm8960_i2caddr=0x1A #0x34 >> 1
-wm8960_micbias=1
-wm8960_mic_left2right=1
-wm8960_clk_mode=master
-
-# SAI0 for BT Audio
-# Increase pool_size by 2 * 256 when enabling
-#[ctrl]
-#name=mxsai-mx8
-#options=tx_msel=1,rx_msel=2
-}
-
-/etc/system/config/audio/io_audio_sai_esai.conf = {
-###########
-# Note: When running with num_tx_aif == 1 then we DMA directly from the PCM buffer
-# (default max size 256kb). If num_tx_aif > 1 then we DMA from an internal ping-pong
-# buffer (tx_frag_size * 2, default = 4KB*2). Same applies for rx.
-#
-###########
-[global]
-pool_name=below4G
-pool_size=1024
-
-[ctrl]
-name=mxsai-mx8
-options=saibase=1,clk_mode=slave,tx_slot_size=32,rx_slot_size=32,tx_msel=1,rx_msel=1,tx_sample_size=4,rx_sample_size=4,tx_rate=48000,rx_rate=48000
-mixer_dll=wm8960
-wm8960_mclk=24576000
-wm8960_adclrc=1
-wm8960_i2cdev=10
-wm8960_i2caddr=0x1A #0x34 >> 1
-wm8960_micbias=1
-wm8960_mic_left2right=1
-wm8960_clk_mode=master
-
-# SAI0 for BT Audio
-# Increase pool_size by 2 * 256 when enabling
-#[ctrl]
-#name=mxsai-mx8
-#options=tx_msel=1,rx_msel=2
-
-[ctrl]
-name=mxesai-mx8
-options=rx_voices=2:2,tx_voices=2:2:2:2,rclk_pol=0,i2c_bus=10
-mixer_dll=cs42xx8
-cs42xx8_clk_ratio=512
-cs42xx8_format=0
+mixer_dll=sgtl5000
+sgtl5000_i2cdev=1
+sgtl5000_adr0cs=0
+sgtl5000_mclk=24576000
+sgtl5000_samplerate=48000
+sgtl5000_input_mux=mic_in
 }
 
 ###########################################################################
-## Uncomment for SC driver
+## SC driver
 ###########################################################################
-sc-imx8
+sc-imx8=../src/hardware/support/sc-imx8/aarch64/le/sc-imx8
 
 ###########################################################################
-## Uncomment for Block driver
+## Block driver
 ###########################################################################
-devb-sdmmc-mx8x
+devb-sdmmc-mx8x=../src/hardware/devb/sdmmc/aarch64/mx8x.le/devb-sdmmc-mx8x
 
 ###########################################################################
-## Uncomment for mmc utilities
+## mmc utilities
 ###########################################################################
 mmc_util
 
 ###########################################################################
-## Uncomment for FLEXSPI driver
+## FLEXSPI driver
 ###########################################################################
-devf-flexspi-imx8
+devf-flexspi-imx8=../src/hardware/flash/boards/flexspi-imx8/aarch64/le/devf-flexspi-imx8
 flashctl
 
 ###########################################################################
@@ -610,15 +605,15 @@ flashctl
 #fs-etfs-imx-micron
 
 ###########################################################################
-## Uncomment for SPI
+## SPI
 ###########################################################################
-spi-master
-spi-slave
+spi-master=../src/hardware/spi/master/aarch64/le/spi-master
+spi-slave=../src/hardware/spi/slave/aarch64/le/spi-slave
 
 ###########################################################################
 ## I2C driver
 ###########################################################################
-i2c-imx8
+i2c-imx8=../src/hardware/i2c/imx8/aarch64/le/i2c-imx8
 
 ###########################################################################
 ## AUDIO
@@ -627,13 +622,11 @@ io-audio
 wave
 waverec
 mix_ctl
-#asrc-imx
-#acm-imx
 
 ###########################################################################
 ## Messaging unit
 ###########################################################################
-libmu-mx8.so
+libmu-mx8.so=../src/lib/mu/mx8/aarch64/so-le/libmu-mx8.so
 
 ###########################################################################
 ## uncomment for disk drivers (filesystems support)
@@ -647,7 +640,7 @@ libmu-mx8.so
 #/usr/bin/fsysinfo=fsysinfo
 
 ###########################################################################
-## uncomment for USB HOST driver
+## USB HOST driver
 ###########################################################################
 libhiddi.so
 libusbdi.so
@@ -660,10 +653,17 @@ devnp-asix.so
 # Binaries
 io-usb-otg
 usb
-tcpm-imx8qxp
+/usr/bin/usbselect=../src/utils/u/usbselect/nto/aarch64/imx8x.le/usbselect-imx8x
+/usr/bin/usbcmgr=../src/utils/u/usbcmgr/nto/aarch64/imx8x.le/usbcmgr-imx8x
+/usr/bin/usbhost=../src/scripts/usbhost
+/usr/bin/usbdevmass=../src/scripts/usbdevmass
+/usr/bin/ramdisk=../src/scripts/ramdisk
+
+# QNX Persistent Publish/Subscribe Service
+pps
 
 ###########################################################################
-## uncomment for USB Device stack and utils
+## USB Device stack and utils
 ###########################################################################
 devu-dcd-usbumass-mx8-ci.so
 devu-dcd-iap2ncm-mx8-ci.so
@@ -675,7 +675,7 @@ io-usb-otg
 ulink_ctrl
 
 ###########################################################################
-## uncomment for USB Function drivers
+## USB Function drivers
 ###########################################################################
 devb-umass
 devu-umass_client-block
@@ -684,20 +684,20 @@ devc-serusb_dcd
 ###########################################################################
 ## uncomment for USB NCM Function driver
 ###########################################################################
-devnp-usbdnet.so
+# devnp-usbdnet.so
 
 ###########################################################################
-## uncomment for WatchDog utility
+## WatchDog utility
 ###########################################################################
-wdtkick-sc-imx8
+wdtkick-sc-imx8=../src/hardware/support/wdtkick-sc/imx8/aarch64/le/wdtkick-sc-imx8
 
 ###########################################################################
-## uncomment for RAM disk driver
+## RAM disk driver
 ###########################################################################
 devb-ram
 
 ###########################################################################
-## uncomment for PCIe driver
+## PCIe driver
 ###########################################################################
 libpci.so
 /lib/dll/pci/pci_server-buscfg-generic.so=${QNX_TARGET}/aarch64le/lib/dll/pci/pci_server-buscfg-generic.so
@@ -748,33 +748,10 @@ INTERNAL_REF_CLOCK=no
 ## Set environment and start the main shell
 ###########################################################################
 [perms=0744] .console.sh={
-if isend -a 0x68 -n /dev/i2c1 0 > /dev/null 2>&1 ; then
-    # TODO start enet1 here ?
-    echo Starting ENET1 driver...
+echo "Starting SAI1 driver for SGTL5000 codec..."
+io-audio -c /etc/system/config/audio/io_audio_sai.conf
+waitfor /dev/snd 4
 
-    #######################################################################
-    ## AUDIO driver
-    #######################################################################
-    echo "Starting SAI1 driver for WM8960 codec (/dev/snd)..."
-    io-audio -c /etc/system/config/audio/io_audio_sai.conf
-    waitfor /dev/snd 4
-else
-    if isend -a 0x48 -n /dev/i2c10 0 > /dev/null 2>&1 ; then
-        #######################################################################
-        ## AUDIO driver
-        #######################################################################
-        echo "Starting SAI1 for WM8960 and ESAI0 for CS42888 (/dev/snd)..."
-        io-audio -c /etc/system/config/audio/io_audio_sai_esai.conf
-        waitfor /dev/snd 4
-    else
-        #######################################################################
-        ## AUDIO driver
-        #######################################################################
-        echo "Starting SAI1 driver for WM8960 codec (/dev/snd)..."
-        io-audio -c /etc/system/config/audio/io_audio_sai.conf
-        waitfor /dev/snd 4
-    fi
-fi
 echo setting env variables.
 
 export SYSNAME=nto
