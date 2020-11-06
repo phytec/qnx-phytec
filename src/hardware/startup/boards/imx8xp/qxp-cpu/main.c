@@ -59,6 +59,7 @@ struct debug_device debug_devices[] = {
     },
 };
 
+#if IMX_PCA9557_INIT_ENABLED && IMX_I2C_INIT_ENABLED
 /**
  *  Initialization of the Expander A and the Expander B.
  *
@@ -179,7 +180,9 @@ static int imx_init_pca9557(imx_startup_data_t * startup_data)
 
     return 0;
 }
+#endif	/* if IMX_PCA9557_INIT_ENABLED && IMX_I2C_INIT_ENABLED */
 
+#if IMX_PCA6416_INIT_ENABLED && IMX_I2C_INIT_ENABLED
 /**
  *  Initialization of the CAN IO expander on the baseboard.
  *
@@ -248,19 +251,7 @@ static int imx_init_pca6416(imx_startup_data_t * startup_data)
 
     return 0;
 }
-
-static void imx_bb_enet_detect(imx_startup_data_t * startup_data)
-{
-    uint8_t data[2];
-    data[0] = 0;
-    /* Check whether ENET1 card s connected */
-    if (!imx_lpi2c_send(IMX_LSIO_I2C1_BASE, 0x68, IMX_LPI2C_ADDR_7BIT, data, 1, 1)) {
-        kprintf("ENET1 card found, ESAI disconnected.\n");
-        (void)imx_init_enet1_pads(startup_data);
-    } else {
-        kprintf("ENET1 card NOT found, ESAI functionality selected for shared pads.\n");
-    }
-}
+#endif	/* if IMX_PCA6416_INIT_ENABLED && IMX_I2C_INIT_ENABLED */
 
 /**
  *  Startup program executing out of RAM.
@@ -410,8 +401,6 @@ int main(int argc, char **argv, __attribute__((unused)) char **envv)
         sc_ipc_close(startup_data.ipc);
         crash("Initialization of pca9557 expanders failed.");
     }
-    /* Check if ENET1 card is connected or not. If it is connected, re-configure ESAI pads on ENET functionality */
-    imx_bb_enet_detect(&startup_data);
 #endif
 #if IMX_PCA6416_INIT_ENABLED && IMX_I2C_INIT_ENABLED
     if (imx_init_pca6416(&startup_data) != 0) {

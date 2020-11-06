@@ -525,6 +525,7 @@ static int imx_init_i2c_clock(imx_startup_data_t * startup_data)
     return 0;
 }
 
+#if IMX_LPSPI_INIT_ENABLED
 /**
  * Initialize LPSPI clock.
  *
@@ -551,6 +552,7 @@ static int imx_init_lpspi_clock(imx_startup_data_t * startup_data)
     }
     return 0;
 }
+#endif /* if IMX_LPSPI_INIT_ENABLED */
 
 /**
  * Initialize FLEXSPI clock.
@@ -744,6 +746,7 @@ static int imx_init_audio_clock(imx_startup_data_t * startup_data)
     return -1;
 }
 
+#if IMX_FLEXCAN_INIT_ENABLED
 /**
  * Initialize FlexCAN clock.
  *
@@ -803,6 +806,7 @@ static int imx_init_flexcan_clock(imx_startup_data_t * startup_data)
     } while (0);
     return -1;
 }
+#endif	/* if IMX_FLEXCAN_INIT_ENABLED */
 
 /**
  * Initialize LPUART clock.
@@ -1022,6 +1026,7 @@ static int imx_init_gpu_clock(imx_startup_data_t * startup_data)
     return -1;
 }
 
+#if IMX_ISI_CSI_INIT_ENABLED
 /**
  * Initialize Imaging subsystem clocks.
  *
@@ -1127,6 +1132,7 @@ static int imx_init_isi_csi_clock(imx_startup_data_t * startup_data)
     }
     return 0;
 }
+#endif	/* if IMX_ISI_CSI_INIT_ENABLED */
 
 /**
  * Power up DMA channels.
@@ -1166,7 +1172,10 @@ static int imx_init_dma_clock(imx_startup_data_t * startup_data)
                          SC_R_DMA_0_CH23 ,
                          SC_R_DMA_0_CH24 ,
                          SC_R_DMA_0_CH25 ,
+#if 0
+   results in SC_ERR_NOACCESS reply from SC
                          SC_R_DMA_0_CH26 ,
+#endif
                          SC_R_DMA_0_CH27 ,
                          SC_R_DMA_0_CH28 ,
                          SC_R_DMA_0_CH29 ,

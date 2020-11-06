@@ -1,7 +1,7 @@
 # Uncomment 'IMX_ARM_TRUSTED_FW' symbol to enable Arm Trusted Firmware
 # For enabling ATF, please comment line with the 'SCFW_FLAGS' variable in the images/Makefile file
 # (SCFW going to move all resources to secure partition)
-# IMX_ARM_TRUSTED_FW = 1
+IMX_ARM_TRUSTED_FW = 1
 
 ifdef IMX_ARM_TRUSTED_FW
     LDFLAGS := $(filter-out -nostdlib $(LDF_$(COMPILER_DRIVER)),$(LDFLAGS))

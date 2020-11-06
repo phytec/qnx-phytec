@@ -33,10 +33,12 @@
 #include <aarch64/imx8_common/imx_edma_requests.h>
 #include <aarch64/imx8_common/imx_flexcan.h>
 
+#if IMX_FLEXCAN_INIT_ENABLED
 /* instead of hwibus_add_can() function use the following function to avoid empty tag creation
  * that happens inside hwibus_add_can(), as facing difficulty to fill up that empty tag
  */
 static unsigned imx8x_hwibus_add_can(unsigned parent_hwi_off, hwiattr_can_t *attr);
+#endif
 
 /**
  * Add bus device to the hwinfo table.
@@ -84,7 +86,8 @@ static unsigned imx8x_hwibus_add_can(unsigned parent_hwi_off, hwiattr_can_t *att
                                             }\
                                         }
 
-#if IMX_AUDIO_INIT_ENABLED
+//used by more than just audio    #if IMX_AUDIO_INIT_ENABLED
+#if 1
 /**
  * Add common device to the hwinfo table.
  *
@@ -643,6 +646,7 @@ void imx_init_hwinfo(imx_startup_data_t * startup_data)
     }
 }
 
+#if IMX_FLEXCAN_INIT_ENABLED
 static unsigned imx8x_hwibus_add_can(unsigned parent_hwi_off, hwiattr_can_t *attr)
 {
     unsigned hwi_off = hwibus_add(HWI_ITEM_BUS_CAN, parent_hwi_off);
@@ -655,6 +659,7 @@ static unsigned imx8x_hwibus_add_can(unsigned parent_hwi_off, hwiattr_can_t *att
     }
     return hwi_off;
 }
+#endif
 
 #if defined(__QNXNTO__) && defined(__USESRCVERSION)
 #include <sys/srcversion.h>

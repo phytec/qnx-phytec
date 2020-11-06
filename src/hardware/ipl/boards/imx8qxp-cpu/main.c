@@ -271,9 +271,9 @@ int main(void)
     /* Get chip information */
     imx_get_chip_info(ipc, &chip_type, &chip_rev);
 
-    ser_putstr("\nWelcome to QNX Neutrino Initial Program Loader for NXP ");
+    ser_putstr("\nWelcome to QNX Neutrino Initial Program Loader for the Phytec ");
     ser_putstr(IS_IMX8QXP_MCU_TYPE(chip_type) ? "i.MX8QXP" : "i.MX8DXP/DX");
-    ser_putstr(" CPU Board (ARM Cortex-A35)\n");
+    ser_putstr("-based SoM\n");
 
     /* Get SCFW build info */
     sc_misc_build_info(ipc, &scfw_build, &scfw_commit);
