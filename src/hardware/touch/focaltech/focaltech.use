@@ -1,0 +1,39 @@
+%C Driver for FocalTech FT5x06 line of chips
+
+The Driver is configured in mtouch.conf
+
+Options (to override autodetected defaults):
+  I2Cnum=X            The I2C bus number of the chip.  Default 7.
+  I2Caddr=X           The 7 bit I2C address of the chip in base 10.
+                      Default 56 (hex 38).
+  I2Cspeed=X          The I2C bus speed to use.  Default 100000.
+  irq=X       	      The interrupt associated with the chip.  Default 595
+                      which is GPIO1_IO19 (576 for GPIO1 base + 19).
+  touchpoints=X       The number of touch points supported by the chip
+                      variant.  Default 5.
+  width=X             The width of the associated display in pixels.
+                      Default 800.
+  height=X            The hight of the associated display in pixels.
+                      Default 480.
+  threshold=X         Touch detected threshold from 0 to 255.  If not set, the
+                      chip default is used.
+  gain=X              The difference value from 0 to 255.  If not set, the
+                      chip default is used.
+  offset=X            The offset value from 0 to 255.  If not set, the chip
+                      default is used.
+
+Examples
+
+# LVDS0: MIPI DSI1 I2C0, using all driver defaults
+begin mtouch
+  driver =  focaltech
+  display = 1
+end mtouch
+
+# LVDS1: MIPI DSI1 I2C0 is bus 4 and the chip is connected to GPIO1_IO05
+# which corresponds to interrupt (576 + 5)
+begin mtouch
+  driver =  focaltech
+  display = 2
+  options = I2Cnum=4,irq=581
+end mtouch
