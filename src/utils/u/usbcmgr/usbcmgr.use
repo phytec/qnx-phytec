@@ -1,0 +1,3 @@
+Initalize or display the status of the USB-C controller:
+%C [status | boot]
+With no option, the chip is initialized.
