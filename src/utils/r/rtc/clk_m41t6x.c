@@ -47,7 +47,7 @@
 #define M41T6x_MONTH_CB_MASK    0xC0    /* Century bits mask*/
 
 #define M41T6x_I2C_ADDRESS      (0xD0 >> 1)
-#define M41T6x_I2C_DEVNAME      "/dev/i2c0"
+#define M41T6x_I2C_DEVNAME      "/dev/i2c1"
 
 
 /*
