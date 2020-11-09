@@ -77,6 +77,7 @@
 #include <netdrvr/nic_mutex.h>
 #endif
 #include "nxp.h"
+#include "dp83867.h"
 
 #ifdef MX8XP
 #include "aarch64/mx8x.h"
