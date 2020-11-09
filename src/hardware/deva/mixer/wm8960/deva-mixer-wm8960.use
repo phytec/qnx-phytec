@@ -1,0 +1,26 @@
+%C - Mixer DLL for the WM8960 codec
+
+This is a DLL of the io-audio system.
+
+Configuration file options:
+      wm8960_mclk=num                           Clock Frequency (default: 24576000)
+      wm8960_adclrc=<0|1>                       ADCLRC/GPIO1 Function Select (0=ADCLRC(default), 1=GPIO pin)
+      wm8960_i2cdev=num                         I2C device used (0,1,2)
+      wm8960_i2caddr=num                        I2C device address (default: 0x1A)
+      wm8960_clk_mode=<master|slave>            Codec master/slave mode (default: slave)
+      wm8960_mic_left2right=<0|1>               Source right channel data from left ADC
+      wm8960_micbias=<0|1>                      Enables microphone bias (default: 0)
+
+All codec options are to be included under the [ctrl] section for the audio card the
+mixer DLL is to be mounted under.
+
+[ctrl]
+name=mxsai-mx8
+options=saibase=1,tx_msel=1,rx_msel=1,tx_sample_size=4,rx_sample_size=4
+mixer_dll=wm8960
+wm8960_mclk=24576000
+wm8960_adclrc=1
+wm8960_i2cdev=10
+wm8960_i2caddr=0x1A
+wm8960_mic_left2right=1
+wm8960_micbias=1

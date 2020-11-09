@@ -1,0 +1,52 @@
+OUTPUT_FORMAT("elf64-littleaarch64", "elf64-littleaarch64", "elf64-littleaarch64")
+OUTPUT_ARCH(aarch64)
+ENTRY(_start)
+
+MEMORY
+{
+    m_rom         :  ORIGIN = 0x80000000,  LENGTH = (0x30000 + 0x020000)
+    m_stack       :  ORIGIN = (0x80000000 + 0x020000 + 0x30000),  LENGTH = 0x10000
+}
+
+SECTIONS
+{
+    . = ALIGN(4);
+    .text :
+    {
+        _ipl_code_start = .;
+        KEEP(*(.ArmTrustedFW))          /* ARM Trusted Firmware section */
+        . = 0x020000;
+        *(.text)
+        *(.note.gnu.build-id)
+        *(.rodata*)
+        _ipl_code_end = .;
+    } > m_rom
+
+    . = ALIGN(4);
+    _etext = .;
+    .data :
+    {
+        *(.data)
+        *(.data*)
+        *(.sdata)
+    } > m_rom
+
+    . = ALIGN(4);
+    _ecopy = .;
+    .bss  :
+    {
+        *(.bss)
+        *(.sbss)
+    } > m_rom
+
+    .stack :
+    {
+        . = ALIGN(8);
+        __ipl_stack_bottom = .;
+        . += 0x5000;
+        __ipl_stack_top = .;
+    } > m_stack
+
+    __ipl_code_begin = ORIGIN(m_rom);
+    __ipl_code_size = _ecopy - _ipl_code_start;
+}

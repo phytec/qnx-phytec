@@ -1,0 +1,106 @@
+imx SDMMC Driver.
+
+Syntax:
+devb-sdmmc-mx8x [cam cam_options][sdmmc sdmmc_options][blk io-blk_options][disk disk_options][sdio sdio_options] &
+
+Options:  All options are separated by commas.
+
+cam options:   The cam options control the common access methods.
+   quiet       Be quiet: don't display any information on startup.
+   verbose     Be verbose: display full information about units (devices)
+               on startup.
+   pio         Uses PIO mode for read/write.
+   pnp         Enable CAM plug and play (i.e. don't exit at startup
+               when no devices are found). The default is off.
+   cache=[on|off] This option will cause all I/O transfers to be done directly
+               between the disk cache and the media. If this option isnt used,
+               the CAM library will be using an intermediate 32K buffer
+               (called bounce buffer) for doing transfers to/from the media.
+               This will add a memory copy operation and additionally may
+               fragment I/O requests into 32k chunks. Both of these operations
+               are negative for performance.
+   bounce=[size] This option specifies the size of bounce buffer to use. The bounce
+               buffer acts as an intermediate buffer for doing transfers to/from
+               the media. Bounce buffers are useful for devices which cannot access the
+               full range of memory available to the CPU (32 vs 64-bit architecture etc).
+               When used, size should be sufficiently large such that the CAM library
+               doesnt fragment the I/O requests from io-blk, this will show markedly
+               better performance. This option is used when cam cache is not specified,
+               and by default size=32k.
+   user=[uid:gid] Operate as the specified user (uid) and group IDs (gid).
+
+sdmmc options:
+               The sdmmc options control the driver's interface to the SD/MMC device.
+               If there are multiple SD/MMC devices, you can repeat these options
+               for each controller. Remember, however, to specify the sdmmc keyword
+               before each controller's set of options.
+   priority=prio              Set the priority of the processing thread. Dflt 21.
+   busno=bus                  The bus number of the SDIO controller.
+   partitions=on              Enable eMMC partitions.
+   cache=on                   Enable eMMC volatile cache.
+   bs=[options]               Set board specific options.
+   pwroff_notify=[short/long] Set power off notification mode for emmc [short/long].
+   bkops=[on/auto]            Value 'on' = Manual background operations. Vaue 'auto' = Device background operations.
+
+blk options:   The blk options control the driver's interface to io-blk.so.
+               If specified, they must follow the blk keyword.
+               For more information, see io-blk.so.
+
+disk_options:  The disk options control the driver's interface to cam-disk.so.
+               If specified, they must follow the disk keyword.
+               For more information, see cam-disk.so.
+
+sdio options:  The sdio options control the driver's interface to the SD/MMC host
+               controller.  If there are multiple host controllers, you can repeat
+               these options for each controller. Remember, however, to specify
+               the sdio keyword before each controller's set of options.
+   verbose=[level]   Set the sdio verbosity level.
+   priority=[level]  Set the sdio priority level.
+   hc=name           Name of host controller.
+   vid=vid           The vendor id of the controller.
+   did=did           The device id of the controller.
+   idx=idx           The index of the controller in the machine, where
+                     idx is a value between 0 and the number of adapters.
+   addr=addr         The address of the interface.
+   irq=req           The interrupt used by the controller.
+   clk=clk           Set the operational clock.
+   dma=dma           DMA channel.
+   bw=[~]bw          Set/Clear bus widths (4, 8).
+   timing=[~]timing  Set/Clear timings (hs, ddr, sdr12, sdr25, sdr50, sdr104, hs200, hs400, hs400es).
+   ~bmstr            Disable DMA.
+   ~ac12             Disable AC12.  Dflt on.
+   ~ac23             Disable AC23.  Dflt on.
+   pm=idle:sleep     Set the pwr mgnt idle/sleep time in ms. Dflt 100:10000 ms.
+   bs=options        Board specific options.
+   emmc              eMMC device is connected to the interface
+
+
+Notes for board-specific (bs) options:
+-----------------------------------
+bs Options: All options are separated by colons
+
+'emmc'                      : Embedded mmc chip mode set; it implies "nocd" option as well.
+'nocd'                      : Card-detect is not activated.
+'cd_base'                   : Card-detect I/O base address.
+'cd_pin'                    : Card-detect I/O bit number.
+'cd_irq'                    : Card-detect GPIO IRQ, obtained from the interrupt map.
+                              If not set, it works in non-interrupt mode.
+'cd'                        : One option to specify all card-detect options;
+                              (FORMAT: cd=cd_base^cd_pin^cd_irq)
+'wp_base'                   : Write-protect I/O base address.
+'wp_pin'                    : Write-protect I/O bit number.
+'wp'                        : One option to specify all write-protect options;
+                              (FORMAT: wp=wp_base^wp_pin)
+'bw'                        : Data bus width.
+'vdd1_8'                    : 1.8 V support capability.
+'rs_base'                   : Reset I/O base address.
+'rs_pin'                    : Reset I/O bit number.
+'rs_irq'                    : Reset GPIO IRQ, obtained from the interrupt map.
+'dtype'                     : Driver type.
+'sdll'                      : Strobe DLL Control Slave Delay Target. Can be programmed in
+                              1/16th increments of a STROBE_REF_CLOCK half-period.
+'tuning=[manual|standard]'  : Tuning algorithm to use
+
+Example:
+-----------------------------------
+devb-sdmmc-mx8x cam cache,quiet blk cache=2M sdio addr=0x5B020000,irq=265 disk name=sd0

@@ -1,0 +1,15 @@
+%C Watchdog refresh utility for i.MX8 family that use sc-imx8 driver
+
+Syntax:
+	wdtkick-sc-imx8 [options]
+Options:
+ -p priority   Define priority of the Watchdog Timer Module event (default: 10)
+ -t time       Set wdog refresh time in milliseconds (default: 5000)
+ -U uid[:gid]  Change to the specified user ID (uid). The uid can be a username
+               from the user database or a numeric user ID. With a numeric uid,
+               a numeric group ID (gid) can optionally be specified. If a
+               numeric gid is not given with a numeric uid, a default group of
+               0 (root) is used.
+
+Example to run wdtkick utility on i.MX8:
+    wdtkick-sc-imx8 -t 5000 -p 2

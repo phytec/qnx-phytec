@@ -1,0 +1,1026 @@
+###################################################################################
+#
+# the NXP i.MX8QXP CPU CARD Board, based on ARM Cortex A35 Core Platform
+#
+####################################################################################
+#
+[image=0x82300000]
+[virtual=aarch64le,binary +compress] .bootstrap = {
+    # '-Px'-> to specify how many processors are present.
+    # '-W' -> enable watchdog
+    startup-imx8qxp-cpu -P4 -W
+
+    PATH=/proc/boot:/bin:/usr/bin:/usr/photon/bin:/opt/bin:/sbin:/usr/sbin:/usr/lib:/tmp:/etc
+    LD_LIBRARY_PATH=/proc/boot:/lib:/usr/lib:/lib/dll:/usr/lib/graphics/iMX8QXP:/opt/lib:/usr/photon/lib:/usr/lib:/lib/dll/pci:/tmp:/etc procnto-smp-instr -ae
+}
+
+[+script] .script = {
+    # Initialise the console
+    procmgr_symlink ../../proc/boot/libc.so.4 /usr/lib/ldqnx-64.so.2
+
+    display_msg Welcome to QNX700 on the NXP i.MX8QXP CPU Board (ARM Cortex-A35)
+
+    # Ensure that all serial debug and telnet ksh sessions have environment variables set
+    ENV=/etc/profile
+
+    # Setup PCI envvars here so that they are picked up by any services that use PCI
+    PCI_HW_MODULE=/lib/dll/pci/pci_hw-nxp-imx8-cpu.so
+    PCI_HW_CONFIG_FILE=/etc/system/config/pci/pci_hw-imx8-cpu.cfg
+    PCI_DEBUG_MODULE=/lib/dll/pci/pci_debug2.so
+    PCI_SLOG_MODULE=/lib/dll/pci/pci_slog2.so
+    PCI_BKWD_COMPAT_MODULE=/lib/dll/pci/pci_bkwd_compat.so
+    ## Uncomment for legacy INTx interrupt support only
+    # PCI_MODULE_BLACKLIST=/lib/dll/pci/pci_cap-0x11.so:/lib/dll/pci/pci_cap-0x05.so
+    PCI_BASE_VERBOSITY=3
+
+    # Start some common servers
+    slogger2
+    pipe &
+    sc-imx8 &
+    TERM=qansi
+
+
+    #######################################################################
+    ## WatchDog utility
+    ## If startup is given '-W' parameter then the 'wdtkick' utility MUST
+    ## be uncommented below.
+    #######################################################################
+    display_msg Starting Watchdog driver...
+    wdtkick-sc-imx8 -t 5000
+
+    #######################################################################
+    ## RTC utility
+    ## It use the sc-imx8 utility
+    #######################################################################
+    display_msg Setting OS clock from RTC
+    rtc-imx8x hw
+
+    #######################################################################
+    ## Random service
+    #######################################################################
+    display_msg "Starting random service ..."
+    random -t
+
+    #######################################################################
+    ## Serial driver
+    ##
+    ## devc-sermx8     - Serial driver with an interrupt mode enabled
+    ## devc-sermx8-dma - Serial driver with a DMA mode enabled
+    ##                       (-d option has to be used)
+    #######################################################################
+
+    ## LPUART0 is connected to the USB->RS232 bridge (QNX console)
+    display_msg Starting Serial driver (/dev/ser1)...
+    devc-sermx8 -e -F -S -u 1 -c80000000 0x5A060000,257
+    waitfor /dev/ser1 4
+    reopen /dev/ser1
+
+    ## LPUART1 - Uncomment following three lines to initialize LPUART1
+    # display_msg Starting Serial driver (/dev/ser2)...
+    # devc-sermx8 -F -S -u 2 0x5A070000,258
+    # waitfor /dev/ser2 4
+
+    ## LPUART2 - Uncomment following three lines to initialize LPUART2
+    # display_msg Starting Serial driver (/dev/ser3)...
+    # devc-sermx8 -F -S -u 3 0x5A080000,259
+    # waitfor /dev/ser3 4
+
+    ## LPUART3 - Uncomment following three lines to initialize LPUART3
+    # display_msg Starting Serial driver (/dev/ser4)...
+    # devc-sermx8 -F -S -u 4 0x5A090000,260
+    # waitfor /dev/ser4 4
+
+    #######################################################################
+    ## I2C driver
+    #######################################################################
+    display_msg Starting I2C1,4,6,7,10 driver (/dev/i2c1,4,6,7,10)...
+    # LSIO I2C1
+    i2c-imx8 -v -I1 --u 1
+    # MIPI DSI1 I2C0
+    i2c-imx8 -v -t500 -I4 --u 4
+    # MIPI CSI0 I2C0
+    i2c-imx8 -v -I6 --u 6
+    # MIPI DSI0 I2C0
+    i2c-imx8 -v -t500 -I7 --u 7
+    # Cortex M4 I2C0
+    i2c-imx8 -v -I10 --u10
+
+    ln -sfP /dev/i2c6  /dev/i2c_ov5640_csi0
+    ln -sfP /dev/i2c6  /dev/i2c_max9286_csi0
+    ln -sfP /dev/i2c10 /dev/i2c_ov5640_ci_pi
+
+    #######################################################################
+    ## SPI driver
+    #######################################################################
+    # Audio slot 1
+    display_msg Starting SPI0 driver (/dev/spi0)...
+    spi-master -u0 -d imx8lpspi hwi=0,dbt=1,pcssck=1,sckpcs=1,rxedma=0:0:448,txedma=0:1:449
+    # Uncomment when you want to use SPI in slave mode.
+    # spi-slave -u0 -d imx8lpspi hwi=0,slave=1
+
+    # ENET connector
+    display_msg Starting SPI3 driver (/dev/spi3)...
+    spi-master -u3 -d imx8lpspi hwi=3,dbt=1,pcssck=1,sckpcs=1,rxedma=0:6:454,txedma=0:7:455
+    # Uncomment when you want to use SPI in slave mode.
+    # spi-slave -u3 -d imx8lpspi hwi=3,slave=1
+
+    #######################################################################
+    ## FlexCAN0 peripheral used; Bitrate = 250k
+    #######################################################################
+    display_msg Starting CAN driver (/dev/can0/*)...
+    dev-can-mx7x-mx8x -b250K can0
+
+    #######################################################################
+    ## FlexCAN1 peripheral used; Bitrate = 250k
+    #######################################################################
+    # Uncomment next two lines to initialize FlexCAN 1 peripheral.
+    display_msg Starting CAN driver (/dev/can1/*)...
+    dev-can-mx7x-mx8x -b250K can1
+
+    #######################################################################
+    ## FlexCAN2 peripheral used; Bitrate = 250k
+    #######################################################################
+    # Uncomment next two lines to initialize FlexCAN 2 peripheral.
+    display_msg Starting CAN driver (/dev/can2/*)...
+    dev-can-mx7x-mx8x -b250K can2
+
+    #######################################################################
+    ## SD memory card / eMMC driver
+    #######################################################################
+    # eMMC uses SD0 controller
+    display_msg Starting eMMC driver (/dev/emmcx)...
+    devb-sdmmc-mx8x cam cache,quiet blk ra=64k:2048k,memory="sysram&below4G:sysram",maxio=256,cache=4m disk name=emmc sdio idx=0,bs=emmc:bw=8:tuning=standard,verbose=1
+    waitfor /dev/emmc0 3
+
+    # Example of partitioning, formatting and mounting of the dos partition on emmc card to /fs/emmc directory.
+    # fdisk /dev/emmc0 add -t 11
+    # mount -e /dev/emmc0
+    # waitfor /dev/emmc0t11
+    # mkdosfs /dev/emmc0t11
+    # mount -t dos /dev/emmc0t11 /fs/emmc
+
+    # SD card on CPU board
+    display_msg Starting SD1 memory card driver (/dev/sdx)...
+    devb-sdmmc-mx8x cam pnp,cache,quiet blk ra=64k:2048k,memory="sysram&below4G:sysram",maxio=256,cache=4m disk name=sd sdio idx=1,bs=vdd1_8:cd=0x5D0C0000^22^694,verbose=1
+    # waitfor /dev/sd0 3
+
+    # Example of mounting of the dos partition on the sd card to /fs/sd directory.
+    # mount -t dos /dev/sd0t12 /fs/sd
+
+    ###########################################################################
+    ## Micron MT35XU512 driver.
+    ## OCTAL NOR Flash chip can be formatted like: flashctl -p /dev/fs0p0 -efm
+    ## Please note that erasing the memory will take several minutes. To see
+    ## erase progress you can use verbose mode: flashctl -p /dev/fs0p0 -efmv
+    ## After erasing, formatting and mounting a partition will appear as /fs0p0
+    ###########################################################################
+    display_msg Starting Micron MT35XU512 OCTAL NOR Flash driver (/dev/fsx)...
+    devf-flexspi-imx8
+
+    #######################################################################
+    ## Network driver
+    #######################################################################
+    display_msg "Starting Network driver..."
+    sh -c "io-pkt-v6-hc -dmx8xp deviceindex=0,mac=`genmac-random -m` -ptcpip pkt_typed_mem=below4G,mclbytes=4096"
+
+    # Ensure that TCP/IP fec0 interface is available before the script continue
+    if_up -p fec0
+
+    # Set IP address
+    dhclient -m -lf /dev/shmem/dhclient.leases -pf /dev/shmem/dhclient.pid -nw fec0
+
+    # Set static IP if needed
+    # ifconfig fec0 10.171.65.232
+
+    #######################################################################
+    ## USB2.0 OTG1 & USB3.0 OTG2
+    #######################################################################
+    display_msg Starting OTG1 & OTG2 controller in the host mode (/dev/usb/*)....
+    io-usb-otg -dhcd-ehci-mx28 ioport=0x5B0D0100,irq=299,no_stream,phy=0x5B100000 -dhcd-imx8-xhci ioport=0x5b130000,irq=303
+    waitfor /dev/usb/io-usb-otg 4
+    waitfor /dev/usb/devu-hcd-ehci-mx28.so 4
+    waitfor /dev/usb/devu-hcd-imx8-xhci.so 4
+
+    display_msg Launching devb-umass for /dev/usb/* ...
+    devb-umass cam pnp dos exe=all disk name=umass
+
+    display_msg Starting USB Type-C Port Manager....
+    tcpm-imx8qxp &
+
+    ##### Example of Mass Storage device (USB stick) #####
+    # Step 1 - Create a ram disk
+    # devb-ram ram capacity=16384,nodinit,cache=512k disk name=hd@10
+    # waitfor /dev/hd10
+    # fdisk /dev/hd10 add -t 6
+    # mount -e /dev/hd10
+    # waitfor /dev/hd10t6
+    # mkdosfs /dev/hd10t6
+
+    # Step 2 - Start device stack
+    # display_msg Starting USB OTG1 controller in the device mode - USB stick example (/dev/usb/*)...
+    # io-usb-otg -ddcd-usbumass-mx8-ci ioport=0x5B0D0000,irq=299 -n /dev/otg/io-usb-otg
+    # waitfor /dev/otg/io-usb-otg 4
+    # waitfor /dev/otg/devu-dcd-usbumass-mx8-ci.so 4
+
+    # Step 3 - Start Mass Storage function driver and enable USB soft connect
+    # devu-umass_client-block -l lun=0,devno=1,iface=0,fname=/dev/hd10 -s /dev/otg/io-usb-otg
+    # ulink_ctrl -l 1 -s /dev/otg/io-usb-otg
+
+    ##### Example of CDC-ACM (USB to serial converter) device #####
+    # Step 1 - Start USB device stack
+    # display_msg Starting USB OTG1 controller in the device mode - USB to serial converter example (/dev/usb/*)...
+    # io-usb-otg -ddcd-usbser-mx8-ci ioport=0x5B0D0000,irq=299 -n /dev/otg/io-usb-otg
+    # waitfor /dev/otg/io-usb-otg 4
+    # waitfor /dev/otg/devu-dcd-usbser-mx8-ci.so 4
+
+    # Step 2 - Start USB CDC-ACM function driver and enable USB soft connect
+    # devc-serusb_dcd -e -v -F -s -d iface_list=0,unit=1,path=/dev/otg/io-usb-otg
+    # waitfor /dev/serusb1
+    # ulink_ctrl -l 1 -s /dev/otg/io-usb-otg
+
+    ##### Example of NCM device (Ethernet over USB) #####
+    # Step 1 - Start USB device stack
+    # display_msg Starting USB OTG1 controller in the device mode - Ethernet over USB example (/dev/usb/*)...
+    # io-usb-otg -ddcd-usbncm-mx8-ci ioport=0x5B0D0000,irq=299 -n /dev/otg/io-usb-otg io-usb-otg
+    # waitfor /dev/otg/io-usb-otg 4
+    # waitfor /dev/otg/devu-dcd-usbncm-mx8-ci.so 4
+
+    # Step 2 - Start USB NCM function driver
+    # For best performance attach the usbdnet driver to an existing io-pkt stack. Alternatively multiple
+    # io-pkt stacks can be used (see SDP documentation for more details).
+    # mount -Tio-pkt -o mac=123456789abc,protocol=ncm,path=/dev/otg/io-usb-otg devnp-usbdnet.so
+    # ulink_ctrl -l1 -s /dev/otg/io-usb-otg
+
+    # Step 3 - Assign IP address to ncm interface using DHCP OR any static IP.
+    # if_up -p ncm0
+
+    # ifconfig ncm0 192.168.10.100
+    # OR
+    # dhclient -m -lf /dev/shmem/dhclient_ncm.leases -pf /dev/shmem/dhclient_ncm.pid -nw ncm0
+
+    #######################################################################
+    ## PCI Server
+    #######################################################################
+    display_msg Starting PCI Server...
+    pci-server --bus-scan-limit=1 -c &
+    waitfor /dev/pci
+
+    ###########################################################################################
+    ## DVFS support
+    ## Use dvfs_client to adjust minimum level of performance if necessary (refer to dvfs docs)
+    ###########################################################################################
+    dvfsmgr-imx8x -c /etc/dvfs/config/imx8/dvfs_imx8qxp.conf -o /etc/dvfs/config/imx8/dvfs_pwrtbl_imx8qxp.conf -v
+
+    # Start the main shell
+    [+session] ksh /proc/boot/.console.sh &
+
+}
+
+# Redirect console messages
+[type=link] /bin/sh=/proc/boot/ksh
+[type=link] /dev/console=/dev/ser1
+[type=link] /tmp=/dev/shmem
+[type=link] /var/log=/tmp
+[type=link] /usr/tmp=/tmp
+[type=link] /sbin/devc-pty=/proc/boot/devc-pty
+[type=link] /usr/bin/pdebug=/proc/boot/pdebug
+[type=link] /bin/waitfor=/bin/on
+
+# Programs require the runtime linker (ldqnx.so) to be at a fixed location
+
+# Shared libraries
+libc.so
+libc++.so
+libm.so
+libslog2.so
+libslog2parse.so
+libslog2shim.so
+libpps.so
+libnxp_imx8_sci.so
+libz.so
+libssl.so
+
+###########################################################################
+## EDMA
+###########################################################################
+libdma-edma.so
+
+###########################################################################
+## Uncomment for LPSPI
+###########################################################################
+spi-imx8lpspi.so
+
+###########################################################################
+## uncomment for BLOCK driver
+## substitute cam-xxx.so and fs-xxx.so with the cam drivers and filesystems
+## required
+###########################################################################
+# Block device
+libcam.so
+io-blk.so
+cam-disk.so
+cam-cdrom.so
+fs-qnx6.so
+fs-dos.so
+#
+libimg.so
+libncursesw.so
+
+###########################################################################
+## AUDIO
+###########################################################################
+deva-ctrl-mxesai-mx8.so
+deva-ctrl-mxsai-mx8.so
+deva-util-restore.so
+deva-mixer-cs42xx8.so
+deva-mixer-wm8960.so
+libasound.so
+
+# Executables
+[data=c]
+devc-sermx8
+devc-sermx8-dma
+
+###########################################################################
+## qansi terminal
+###########################################################################
+/usr/lib/terminfo/q/qansi-m=${QNX_TARGET}/usr/lib/terminfo/q/qansi-m
+/usr/lib/terminfo/q/qansi=${QNX_TARGET}/usr/lib/terminfo/q/qansi
+
+/usr/lib/bclib.b=${QNX_TARGET}/usr/lib/bclib.b
+
+
+###########################################################################
+## uncomment for NETWORK driver
+###########################################################################
+libsocket.so
+devnp-mx8xp.so
+librpc.so
+libcrypto.so
+libsecpol.so
+libtracelog.so
+io-pkt-v6-hc
+inetd
+if_up
+getconf
+setconf
+nicinfo
+tftp
+ftp
+qconn
+devc-pty
+telnet
+ifconfig
+ping
+ptpd
+ptpd_ctrl
+date
+fs-nfs3
+librpc.so
+genmac-random
+arp
+hostname
+omshell
+route
+
+###########################################################################
+## dhclient support
+###########################################################################
+dhclient
+/sbin/ifconfig=ifconfig
+[search=${QNX_TARGET}/sbin perms=a+x] /sbin/dhclient-script=dhclient-script
+[search=${QNX_TARGET}/etc]/etc/dhclient.conf=dhclient.conf
+
+###########################################################################
+## uncomment for CAN driver
+###########################################################################
+dev-can-mx7x-mx8x
+canctl
+
+###########################################################################
+## DVFS support
+###########################################################################
+dvfsmgr-imx8x
+dvfs_client
+/etc/dvfs/config/imx8/dvfs_imx8qxp.conf=../install/etc/dvfs/config/imx8/dvfs_imx8qxp.conf
+/etc/dvfs/config/imx8/dvfs_pwrtbl_imx8qxp.conf=../install/etc/dvfs/config/imx8/dvfs_pwrtbl_imx8qxp.conf
+
+#######################################################################
+## RTC utility
+#######################################################################
+rtc-imx8x
+
+###########################################################################
+## uncomment for REMOTE_DEBUG
+###########################################################################
+devc-pty
+qconn
+/usr/bin/pdebug=pdebug
+
+###########################################################################
+## Network services (telnet) support
+##########################################################################
+[uid=0 gid=0 perms=4755] /bin/login=login
+[uid=0 gid=0 perms=4755] /bin/passwd=passwd
+[uid=0 gid=0 perms=4755] /bin/su=su
+[uid=0 gid=0 perms=0755] /usr/sbin/ftpd=ftpd
+[uid=0 gid=0 perms=0755] /usr/sbin/inetd=inetd
+[uid=0 gid=0 perms=0755] /usr/sbin/telnetd=telnetd
+
+#sshd support will need to be added
+#[uid=0 gid=0 perms=0755] /usr/sbin/sshd=sshd
+
+
+#[type=link] /etc/.pwlock=/tmp/.pwlock
+[type=link] /var/log=/tmp
+[type=link] /var/run=/tmp
+[type=link] /var/lock=/tmp
+
+# NOTE: The following is very insecure and must not be used in a production
+#       environment.  This allows telnet access to root without a password!
+#       Even with a password this is not secure as telnet passes the password
+#       unencrypted over the network.  NO NOT USE THIS IN AN UNSECURED ENVIRONMENT!
+#       This configuration is only meant for initial setup and testing of a new board.
+#       If you need network access use a secure protocol like ssh (e.g. OpenSSH or Drop Bear).
+#
+/etc/inetd.conf = {
+telnet stream tcp nowait root /usr/sbin/telnetd in.telnetd
+ftp stream tcp nowait root /usr/sbin/ftpd in.ftpd -l
+#shell stream tcp nowait root /bin/rshd in.rshd
+#login stream tcp nowait root /bin/rlogind in.rlogind
+#tftp dgram udp wait ftp /bin/tftpd in.tftpd
+}
+
+/etc/ftpusers=${QNX_TARGET}/etc/ftpusers
+/etc/ftpd.conf = {
+/* Make things a+rw by default */
+umask all 0000
+}
+
+/etc/hosts=${QNX_TARGET}/etc/hosts
+/etc/services=${QNX_TARGET}/etc/services
+#/etc/motd=${QNX_TARGET}/etc/motd
+/etc/esh = {
+}
+
+[uid=0 gid=0 perms=0644] /etc/passwd = {
+root:x:0:0:Superuser:/root:/bin/sh
+sshd:x:15:6:sshd:/var/chroot/sshd:/bin/false
+qnxuser:x:1000:1000:QNX User:/home/qnxuser:/bin/sh
+}
+
+# Enabled Username/Password: root/root, qnxuser/qnxuser
+[uid=0 gid=0 perms=0600] /etc/shadow = {
+root:@S@NKlWES1quMp1wmqugkUSnFEpPGn58kIs4wQOgDDNs06vimR+bbGPUKM+9P6jbFUzo3Rm+Qe5MS+17xKhwaeJEg==@Mjg5ZTJiMTM0YTRjYTE2ZGFjMDdhZTFlY2NlMDVmNmE=:1468494669:0:0
+sshd:*:1231323780:0:0
+qnxuser:@S@HZERXjgixvb3157FFeraShhvTVw+10ccUtVUVZbi0fUwpzlzBZFw5gHiFd1XHKit8D39Whe749XAY8fV4P5ANQ==@Y2ZlOTg3M2RhNTM4Y2M2ODY0OWZhODdiNDRkMmU5Nzg=:1468488235:0:0
+}
+
+[uid=0 gid=0 perms=0644] /etc/group = {
+root:x:0:root
+sshd:x:6:
+qnxuser:x:qnxuser
+}
+
+###########################################################################
+## PAM configurations addon build file
+###########################################################################
+[uid=0 gid=0 type=dir dperms=0755] /usr
+[uid=0 gid=0 type=dir dperms=0755] /usr/lib
+[uid=0 gid=0 type=dir dperms=0755] /etc
+[uid=0 gid=0 type=dir dperms=0755] /etc/pam.d
+[uid=0 gid=0 perms=0644] /etc/pam.d/login=${QNX_TARGET}/etc/pam.d/login
+[uid=0 gid=0 perms=0644] /etc/pam.d/on=${QNX_TARGET}/etc/pam.d/on
+[uid=0 gid=0 perms=0644] /etc/pam.d/passwd=${QNX_TARGET}/etc/pam.d/passwd
+[uid=0 gid=0 perms=0644] /etc/pam.d/su=${QNX_TARGET}/etc/pam.d/su
+[uid=0 gid=0 perms=0644] /etc/pam.d/ftpd=${QNX_TARGET}/etc/pam.d/ftpd
+
+[uid=0 gid=0 perms=0755] /usr/lib/libpam.so=libpam.so
+[uid=0 gid=0 perms=0755] /usr/lib/pam_ftpusers.so=pam_ftpusers.so
+[uid=0 gid=0 perms=0755] /usr/lib/pam_rootok.so=pam_rootok.so
+[uid=0 gid=0 perms=0755] /usr/lib/pam_qnx.so=pam_qnx.so
+#[uid=0 gid=0 perms=0755] /usr/lib/pam_deny.so=pam_deny.so
+#[uid=0 gid=0 perms=0755] /usr/lib/pam_echo.so=pam_echo.so
+#[uid=0 gid=0 perms=0755] /usr/lib/pam_exec.so=pam_exec.so
+#[uid=0 gid=0 perms=0755] /usr/lib/pam_group.so=pam_group.so
+#[uid=0 gid=0 perms=0755] /usr/lib/pam_mac.so=pam_mac.so
+#[uid=0 gid=0 perms=0755] /usr/lib/pam_permit.so=pam_permit.so
+#[uid=0 gid=0 perms=0755] /usr/lib/pam_radius.so=pam_radius.so
+#[uid=0 gid=0 perms=0755] /usr/lib/pam_self.so=pam_self.so
+
+/etc/system/config/audio/io_audio_sai.conf = {
+###########
+# Note: When running with num_tx_aif == 1 then we DMA directly from the PCM buffer
+# (default max size 256kb). If num_tx_aif > 1 then we DMA from an internal ping-pong
+# buffer (tx_frag_size * 2, default = 4KB*2). Same applies for rx.
+#
+###########
+[global]
+pool_name=below4G
+pool_size=512
+
+[ctrl]
+name=mxsai-mx8
+options=saibase=1,clk_mode=slave,tx_slot_size=32,rx_slot_size=32,tx_msel=1,rx_msel=1,tx_sample_size=4,rx_sample_size=4,tx_rate=48000,rx_rate=48000
+mixer_dll=wm8960
+wm8960_mclk=24576000
+wm8960_adclrc=1
+wm8960_i2cdev=10
+wm8960_i2caddr=0x1A #0x34 >> 1
+wm8960_micbias=1
+wm8960_mic_left2right=1
+wm8960_clk_mode=master
+
+# SAI0 for BT Audio
+# Increase pool_size by 2 * 256 when enabling
+#[ctrl]
+#name=mxsai-mx8
+#options=tx_msel=1,rx_msel=2
+}
+
+/etc/system/config/audio/io_audio_sai_esai.conf = {
+###########
+# Note: When running with num_tx_aif == 1 then we DMA directly from the PCM buffer
+# (default max size 256kb). If num_tx_aif > 1 then we DMA from an internal ping-pong
+# buffer (tx_frag_size * 2, default = 4KB*2). Same applies for rx.
+#
+###########
+[global]
+pool_name=below4G
+pool_size=1024
+
+[ctrl]
+name=mxsai-mx8
+options=saibase=1,clk_mode=slave,tx_slot_size=32,rx_slot_size=32,tx_msel=1,rx_msel=1,tx_sample_size=4,rx_sample_size=4,tx_rate=48000,rx_rate=48000
+mixer_dll=wm8960
+wm8960_mclk=24576000
+wm8960_adclrc=1
+wm8960_i2cdev=10
+wm8960_i2caddr=0x1A #0x34 >> 1
+wm8960_micbias=1
+wm8960_mic_left2right=1
+wm8960_clk_mode=master
+
+# SAI0 for BT Audio
+# Increase pool_size by 2 * 256 when enabling
+#[ctrl]
+#name=mxsai-mx8
+#options=tx_msel=1,rx_msel=2
+
+[ctrl]
+name=mxesai-mx8
+options=rx_voices=2:2,tx_voices=2:2:2:2,rclk_pol=0,i2c_bus=10
+mixer_dll=cs42xx8
+cs42xx8_clk_ratio=512
+cs42xx8_format=0
+}
+
+###########################################################################
+## Uncomment for SC driver
+###########################################################################
+sc-imx8
+
+###########################################################################
+## Uncomment for Block driver
+###########################################################################
+devb-sdmmc-mx8x
+
+###########################################################################
+## Uncomment for mmc utilities
+###########################################################################
+mmc_util
+
+###########################################################################
+## Uncomment for FLEXSPI driver
+###########################################################################
+devf-flexspi-imx8
+flashctl
+
+###########################################################################
+## uncomment for FLASH NAND driver
+###########################################################################
+#fs-etfs-imx-micron
+
+###########################################################################
+## Uncomment for SPI
+###########################################################################
+spi-master
+spi-slave
+
+###########################################################################
+## I2C driver
+###########################################################################
+i2c-imx8
+
+###########################################################################
+## AUDIO
+###########################################################################
+io-audio
+wave
+waverec
+mix_ctl
+#asrc-imx
+#acm-imx
+
+###########################################################################
+## Messaging unit
+###########################################################################
+libmu-mx8.so
+
+###########################################################################
+## uncomment for disk drivers (filesystems support)
+###########################################################################
+#/sbin/fdisk=fdisk
+#/sbin/mkdosfs=mkdosfs
+#/sbin/mkqnx6fs=mkqnx6fs
+#/sbin/chkdosfs=chkdosfs
+#/sbin/chkqnx6fs=chkqnx6fs
+#/sbin/chkfsys=chkfsys
+#/usr/bin/fsysinfo=fsysinfo
+
+###########################################################################
+## uncomment for USB HOST driver
+###########################################################################
+libhiddi.so
+libusbdi.so
+## Host controller driver library
+devu-hcd-ehci-mx28.so
+devu-hcd-imx8-xhci.so
+devh-usb.so
+## Ethernet dongle driver library
+devnp-asix.so
+# Binaries
+io-usb-otg
+usb
+tcpm-imx8qxp
+
+###########################################################################
+## uncomment for USB Device stack and utils
+###########################################################################
+devu-dcd-usbumass-mx8-ci.so
+devu-dcd-iap2ncm-mx8-ci.so
+devu-dcd-usbncm-mx8-ci.so
+devu-dcd-usbser-mx8-ci.so
+
+libusbdci.so
+io-usb-otg
+ulink_ctrl
+
+###########################################################################
+## uncomment for USB Function drivers
+###########################################################################
+devb-umass
+devu-umass_client-block
+devc-serusb_dcd
+
+###########################################################################
+## uncomment for USB NCM Function driver
+###########################################################################
+devnp-usbdnet.so
+
+###########################################################################
+## uncomment for WatchDog utility
+###########################################################################
+wdtkick-sc-imx8
+
+###########################################################################
+## uncomment for RAM disk driver
+###########################################################################
+devb-ram
+
+###########################################################################
+## uncomment for PCIe driver
+###########################################################################
+libpci.so
+/lib/dll/pci/pci_server-buscfg-generic.so=${QNX_TARGET}/aarch64le/lib/dll/pci/pci_server-buscfg-generic.so
+/lib/dll/pci/pci_bkwd_compat.so=pci/pci_bkwd_compat.so
+/lib/dll/pci/pci_hw-nxp-imx8-cpu.so=pci/pci_hw-nxp-imx8-cpu.so
+/lib/dll/pci/pci_slog2.so=${QNX_TARGET}/aarch64le/lib/dll/pci/pci_slog2.so
+/lib/dll/pci/pci_debug2.so=${QNX_TARGET}/aarch64le/lib/dll/pci/pci_debug2.so
+/lib/dll/pci/pci_strings.so=${QNX_TARGET}/aarch64le/lib/dll/pci/pci_strings.so
+/lib/dll/pci/pci_cap-0x10.so=${QNX_TARGET}/aarch64le/lib/dll/pci/pci_cap-0x10.so
+/lib/dll/pci/pci_cap-0x11.so=${QNX_TARGET}/aarch64le/lib/dll/pci/pci_cap-0x11.so
+/lib/dll/pci/pci_cap-0x05.so=${QNX_TARGET}/aarch64le/lib/dll/pci/pci_cap-0x05.so
+/lib/dll/pci/pci_cap-0x01.so=${QNX_TARGET}/aarch64le/lib/dll/pci/pci_cap-0x01.so
+[search=${QNX_TARGET}/etc/system/config/pci] /etc/system/config/pci/pcidatabase.com-tab_delimited.txt=pcidatabase.com-tab_delimited.txt
+
+/etc/system/config/pci/pci_hw-imx8-cpu.cfg = {
+#############################  S E C T I O N  ##################################
+#
+[NXP_IMX8]
+#
+# imx PCIe HW module configuration
+# --------------------------------
+#
+
+# Enable/disable PCIe 100MHz reference clock generation from MCU (available values 'yes' or 'no')
+INTERNAL_REF_CLOCK=no
+
+# EP link status check period, fix of RC BARs registers which are reset during EP power cycle.
+# (value in ms, 0 = disable EP link status check, default value is 200).
+#LINK_STATUS_CHECK_PERIOD=200
+
+# PCIe max. generation speed a colon (:) separated per PCIe controller (PCIeA:PCIeB:...).
+#MAX_GEN_SPEED=3
+
+# PCIe PERST PAD configuration.
+#   Expected format: PCI_PERST_PAD_CONFIGURATION = A,B,C etc.
+#     where:
+#       A = PCI0 GPIO base address in HEX,
+#       B = PCI0 PAD index (0..31),
+#       C = PCI0 active_level (0, 1)
+#PERST_PAD_CONFIGURATION=0x5F170000,2,0
+
+# PCIe PERST active time in milisecond a colon (:) separated per PCIe controller. Default value is 200 ms.
+# Expected format:  <PCIe0 PERST_active_time_in_ms>:<PCIe1 PERST_active_time_in_ms>:... e.g. 200:200:...
+#PERST_PAD_ACTIVE_TIME=200
+
+}
+# screen composition manager support
+/lib/libimg.so=libimg.so
+
+# uncomment for Image Loading
+# img_codec_bmp.so
+# img_codec_gif.so
+# img_codec_jpg.so
+# img_codec_png.so
+# img_codec_sgi.so
+# img_codec_tga.so
+# img_codec_pcx.so
+# img_codec_tif.so
+# img_codec_wbmp.so
+# libgif.so.5
+# libjpeg.so.4
+# libpng16.so.0
+# libtiff.so.5
+# libz.so.2
+# liblzma.so.5
+# libpng.so
+
+# Graphics support - screen
+screen-debug.so
+screen-gles1.so
+screen-gles2.so
+screen-sw.so
+screen-stdbuf.so
+screen-vivante.so
+
+libswblit.so
+
+libEGL.so
+libGLESv1_CL.so
+libGLESv1_CM.so
+libGLESv2.so
+libWFD.so
+libgestures.so
+libmemobj.so
+libscrmem.so
+libinputevents.so
+libkalman.so
+libscreen.so
+libmtouch-calib.so
+
+###########################################################################
+## Video capture libraries
+###########################################################################
+/usr/lib/libcapture.so=libcapture.so
+/usr/lib/libcapture.so.1=libcapture.so.1
+/usr/lib/libcapture-soc-imx8x.so=libcapture-soc-imx8x.so
+/usr/lib/libcapture-board-imx8x-nxp.so=libcapture-board-imx8x-nxp.so
+/usr/lib/libcapture-camera-ov5640.so=libcapture-camera-ov5640.so
+/usr/lib/libcapture-camera-ov10635.so=libcapture-camera-ov10635.so
+/usr/lib/libcapture-usb-uvc.so=libcapture-usb-uvc.so
+/usr/lib/libcapture-simulated.so=libcapture-simulated.so
+
+###########################################################################
+## Graphics base libraries
+###########################################################################
+/lib/dll/libwfdcfg-sample.so=libwfdcfg-sample.so
+/usr/lib/libCL.so=libCL.so
+
+###########################################################################
+## Input libraries
+###########################################################################
+/lib/libmtouch-devi.so=libmtouch-devi.so
+/lib/libmtouch-fake.so=libmtouch-fake.so
+/lib/libmtouch-hid.so=libmtouch-hid.so
+/lib/libmtouch-inject.so=libmtouch-inject.so
+
+
+###########################################################################
+## Board specific graphics libraries
+###########################################################################
+/usr/lib/graphics/iMX8QXP-debug/libCLC.so=graphics/iMX8QXP-debug/libCLC.so
+/usr/lib/graphics/iMX8QXP-debug/libEGL_viv.so=graphics/iMX8QXP-debug/libEGL_viv.so
+/usr/lib/graphics/iMX8QXP-debug/libg2d.so=graphics/iMX8QXP-debug/libg2d.so
+/usr/lib/graphics/iMX8QXP-debug/libGalcore.so=graphics/iMX8QXP-debug/libGalcore.so
+/usr/lib/graphics/iMX8QXP-debug/libGAL.so=graphics/iMX8QXP-debug/libGAL.so
+/usr/lib/graphics/iMX8QXP-debug/libGLES_CL_viv.so=graphics/iMX8QXP-debug/libGLES_CL_viv.so
+/usr/lib/graphics/iMX8QXP-debug/libGLES_CM_viv.so=graphics/iMX8QXP-debug/libGLES_CM_viv.so
+/usr/lib/graphics/iMX8QXP-debug/libGLESv2_viv.so=graphics/iMX8QXP-debug/libGLESv2_viv.so
+/usr/lib/graphics/iMX8QXP-debug/libGLSLC.so=graphics/iMX8QXP-debug/libGLSLC.so
+/usr/lib/graphics/iMX8QXP-debug/libLLVM_viv.so=graphics/iMX8QXP-debug/libLLVM_viv.so
+/usr/lib/graphics/iMX8QXP-debug/libOpenCL.so=graphics/iMX8QXP-debug/libOpenCL.so
+/usr/lib/graphics/iMX8QXP-debug/libOpenVG_viv.so=graphics/iMX8QXP-debug/libOpenVG_viv.so
+/usr/lib/graphics/iMX8QXP-debug/libScreenBlit.so=graphics/iMX8QXP-debug/libScreenBlit.so
+/usr/lib/graphics/iMX8QXP-debug/libVSC.so=graphics/iMX8QXP-debug/libVSC.so
+/usr/lib/graphics/iMX8QXP-debug/libwfdcfg-imx8qxp-hdmi-it6263_g.so=graphics/iMX8QXP-debug/libwfdcfg-imx8qxp-hdmi-it6263_g.so
+/usr/lib/graphics/iMX8QXP-debug/libWFDimx8dpu_g.so=graphics/iMX8QXP-debug/libWFDimx8dpu_g.so
+
+/usr/lib/graphics/iMX8QXP/libCLC.so=graphics/iMX8QXP/libCLC.so
+/usr/lib/graphics/iMX8QXP/libEGL_viv.so=graphics/iMX8QXP/libEGL_viv.so
+/usr/lib/graphics/iMX8QXP/libg2d.so=graphics/iMX8QXP/libg2d.so
+/usr/lib/graphics/iMX8QXP/libGalcore.so=graphics/iMX8QXP/libGalcore.so
+/usr/lib/graphics/iMX8QXP/libGAL.so=graphics/iMX8QXP/libGAL.so
+/usr/lib/graphics/iMX8QXP/libGLES_CL_viv.so=graphics/iMX8QXP/libGLES_CL_viv.so
+/usr/lib/graphics/iMX8QXP/libGLES_CM_viv.so=graphics/iMX8QXP/libGLES_CM_viv.so
+/usr/lib/graphics/iMX8QXP/libGLESv2_viv.so=graphics/iMX8QXP/libGLESv2_viv.so
+/usr/lib/graphics/iMX8QXP/libGLSLC.so=graphics/iMX8QXP/libGLSLC.so
+/usr/lib/graphics/iMX8QXP/libLLVM_viv.so=graphics/iMX8QXP/libLLVM_viv.so
+/usr/lib/graphics/iMX8QXP/libOpenCL.so=graphics/iMX8QXP/libOpenCL.so
+/usr/lib/graphics/iMX8QXP/libOpenVG_viv.so=graphics/iMX8QXP/libOpenVG_viv.so
+/usr/lib/graphics/iMX8QXP/libScreenBlit.so=graphics/iMX8QXP/libScreenBlit.so
+/usr/lib/graphics/iMX8QXP/libVSC.so=graphics/iMX8QXP/libVSC.so
+/usr/lib/graphics/iMX8QXP/libwfdcfg-imx8qxp-hdmi-it6263.so=graphics/iMX8QXP/libwfdcfg-imx8qxp-hdmi-it6263.so
+/usr/lib/graphics/iMX8QXP/libWFDimx8dpu.so=graphics/iMX8QXP/libWFDimx8dpu.so
+
+
+
+
+###########################################################################
+## Set environment and start the main shell
+###########################################################################
+[perms=0744] .console.sh={
+if isend -a 0x68 -n /dev/i2c1 0 > /dev/null 2>&1 ; then
+    # TODO start enet1 here ?
+    echo Starting ENET1 driver...
+
+    #######################################################################
+    ## AUDIO driver
+    #######################################################################
+    echo "Starting SAI1 driver for WM8960 codec (/dev/snd)..."
+    io-audio -c /etc/system/config/audio/io_audio_sai.conf
+    waitfor /dev/snd 4
+else
+    if isend -a 0x48 -n /dev/i2c10 0 > /dev/null 2>&1 ; then
+        #######################################################################
+        ## AUDIO driver
+        #######################################################################
+        echo "Starting SAI1 for WM8960 and ESAI0 for CS42888 (/dev/snd)..."
+        io-audio -c /etc/system/config/audio/io_audio_sai_esai.conf
+        waitfor /dev/snd 4
+    else
+        #######################################################################
+        ## AUDIO driver
+        #######################################################################
+        echo "Starting SAI1 driver for WM8960 codec (/dev/snd)..."
+        io-audio -c /etc/system/config/audio/io_audio_sai.conf
+        waitfor /dev/snd 4
+    fi
+fi
+echo setting env variables.
+
+export SYSNAME=nto
+export TERM=qansi
+export HOME=/
+export PATH=:/bin:/usr/bin:/sbin:/usr/sbin:/proc/boot
+export LD_LIBRARY_PATH=:/lib:/usr/lib:/usr/lib/graphics/iMX8QXP:/lib/dll:/lib/dll/pci:/proc/boot
+export PCI_HW_MODULE=/lib/dll/pci/pci_hw-nxp-imx8-cpu.so
+export PCI_HW_CONFIG_FILE=/etc/system/config/pci/pci_hw-imx8-cpu.cfg
+export PCI_DEBUG_MODULE=/lib/dll/pci/pci_debug2.so
+export PCI_SLOG_MODULE=/lib/dll/pci/pci_slog2.so
+export PCI_BKWD_COMPAT_MODULE=/lib/dll/pci/pci_bkwd_compat.so
+export PCI_BASE_VERBOSITY=3
+
+#######################################################################
+## Start the screen graphics
+#######################################################################
+echo Starting Screen Graphics...
+screen -c /usr/lib/graphics/iMX8QXP/graphics.conf
+echo done.
+echo
+
+#######################################################################
+## REMOTE_DEBUG (gdb or Momentics)
+##  - refer to the help documentation for the gdb, qconn and the IDE
+##    for more information on remote debugging
+##  - the commands shown require that NETWORK is enabled too
+#######################################################################
+devc-pty
+
+#waitfor /dev/ptyp0 4
+#waitfor /dev/socket 4
+PATH=$PATH:/usr/bin qconn port=8000
+
+inetd &
+ksh -l
+}
+
+###########################################################################
+## general commands
+###########################################################################
+bc
+cp
+df
+ls
+cat
+ksh
+fesh
+pipe
+pidin
+uname
+slogger2
+slog2info
+slay
+mount
+umount
+use
+date
+shutdown
+chmod
+ln
+rm
+mv
+sleep
+random
+dd
+hd
+top
+mkdir
+grep
+usb
+fdisk
+mkdosfs
+fs-cifs
+pci-server
+pci-tool
+waitfor
+isend
+echo
+sed
+more
+
+###########################################################################
+## scaling.conf
+###########################################################################
+[search=${QNX_TARGET}/etc/system/config]/etc/system/config/scaling.conf=scaling.conf
+
+###########################################################################
+## keyboard
+###########################################################################
+[search=${QNX_TARGET}/usr/share/keyboard]/usr/share/keyboard/en_US_101.kbd=en_US_101.kbd
+
+###########################################################################
+## Screen executables
+###########################################################################
+/sbin/screen=screen
+/usr/bin/gles1-vsync=gles1-vsync
+/usr/bin/gles2-gears=gles2-gears
+/usr/bin/sw-vsync=sw-vsync
+
+/usr/bin/calib-touch=calib-touch
+/usr/bin/events=events
+
+###########################################################################
+## Graphics base executables
+###########################################################################
+/usr/bin/dpy-vsync=dpy-vsync
+/usr/bin/egl-configs=egl-configs
+/usr/bin/gles1-gears=gles1-gears
+/usr/bin/gles3-gears=gles3-gears
+/usr/bin/screen-gles2-tools=screen-gles2-tools
+/usr/bin/screenshot=screenshot
+/usr/bin/sharewin=sharewin
+/usr/bin/win-vsync=win-vsync
+
+###########################################################################
+## Fonts
+###########################################################################
+/usr/lib/libfontconfig.so=libfontconfig.so
+/usr/lib/libfreetype.so=libfreetype.so
+/usr/bin/font-freetype=font-freetype
+
+###########################################################################
+## Image Codecs
+###########################################################################
+[search=${QNX_TARGET}/etc/system/config]/etc/system/config/img.conf=img.conf
+
+###########################################################################
+## Inputs
+###########################################################################
+/usr/sbin/mtouch=mtouch
+
+###########################################################################
+## Video capture executables
+###########################################################################
+/usr/bin/vcapture-demo=vcapture-demo
+
+###########################################################################
+## Board specific graphics files
+###########################################################################
+/usr/lib/graphics/iMX8QXP-debug/graphics.conf=graphics/iMX8QXP-debug/graphics.conf
+/usr/lib/graphics/iMX8QXP/graphics.conf=graphics/iMX8QXP/graphics.conf
+
+###########################################################################
+## END OF BUILD SCRIPT
+###########################################################################

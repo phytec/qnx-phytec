@@ -1,0 +1,32 @@
+<!-- Unless otherwise specified, values/attributes are free-form strings -->
+    <!-- type is currently either BSP or SourceOnly -->
+<sourcePackage type="BSP" id="bsp-nxp-imx8qxp-cpu">
+    <title>NXP i.MX8QXP CPU</title>
+    <release></release>
+
+    <license>QDL and Apache II</license>
+    <requires>package: com.qnx.sdp.target.audio (>= 7.0.5269)</requires>
+    <requires>package: com.qnx.sdp.target.screen.video_capture (>= 7.0.6529)</requires>
+    <requires>package: com.qnx.sdp.target.screen.board.imx8 (>= 7.0.6529)</requires>
+    <requires>package: com.qnx.sdp.target.usb.base (>= 7.0.4248)</requires>
+    <requires>package: com.qnx.sdp.target.usb.dcd (>= 7.0.4248  )</requires>
+    <requires>api: sdp_smmu_api (>=1.0)</requires>
+    <requires>package: com.qnx.sdp.target.fs.cam (>=7.0.4284)</requires>
+    <requires>package: com.qnx.sdp.target.connectivity.io_char (>=7.0.4284)</requires>
+    <requires>package: com.qnx.sdp.target.microkernel.core (>= 7.0.4284)</requires>
+    <requires>package: com.qnx.sdp.target.security.secpol (>= 7.0.4284)</requires>
+    <requires>package: com.qnx.sdp.target.base.libsocket (>= 7.0.4284)</requires>
+    <requires>package: com.qnx.sdp.target.net.libnetdrvr (>= 7.0.4247)</requires>
+    <requires>package: com.qnx.sdp.target.net.iopkt (>= 7.0.4284)</requires>
+    <requires>binary: dhclient (>= 7.0.567)</requires>
+    <requires>implementation: pci_packaging (>=1.1.0)</requires>
+    <startup>startup-imx8qxp-cpu</startup>
+    <description>This board support package is for the NXP i.MX 8QuadXPlus Multisensory Enablement Kit (MEK). This BSP contains prebuilt binaries and buildfiles to boot your board with the QNX Neutrino RTOS. In addition, this BSP provides source code for various drivers that you can build. For documentation to use this BSP, download the user's guide from the QNX website.</description>
+    <vendor>QNX Software Systems Limited</vendor>
+    <qnxTargetVersion>SDP7.0</qnxTargetVersion>
+    <qnxTargetCPU variant="aarch64le">AARCH64</qnxTargetCPU>
+    <!-- type is currently only import, will be extended in the future. -->
+    <bsp type="import">
+        <import id="nxp-imx8qxp-cpu">images/imx8qxp-cpu.build</import>
+    </bsp>
+</sourcePackage>

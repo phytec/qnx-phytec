@@ -1,0 +1,23 @@
+%C - DVFS Manager
+
+%C [vwp:i:c:d:u:s]
+
+Options:
+
+ -c cfg_file     DVFS config file path (default: /etc/system/config/dvfs.conf)
+ -o cfg_pwrtable DVFS config Power Table file path (default: /etc/system/config/dvfs_pwrtbl.conf)
+ -U uid:gid      change user id and group id after setup
+ -v              Increase verbosity
+
+SoC-Specific Option
+ -Dxxx          SoC specific option. Use "-Duse" to print available options
+
+Required if using stock 6.5.0 Kernel (with no patches applied)
+ -w              Enable wfi work-around (default: disabled)
+
+IMX6-specific option
+ -s              Ignore speed grading on MX6 (default: 1)
+
+Advanced Options:
+ -p prio         CPU accounting priority (default:51)
+ -i interval     CPU accounting interval in ms (default: 1000ms)

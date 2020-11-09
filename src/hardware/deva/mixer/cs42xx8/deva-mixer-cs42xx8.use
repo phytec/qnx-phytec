@@ -1,0 +1,18 @@
+%C - Mixer DLL for the CS42xx8 codec
+
+This is a DLL of the io-audio system.
+
+Configuration file options:
+      cs42xx8_clk_ratio=num                         Clock ratio (default: 512)
+      cs42xx8_format=<0|1>                          Output forma (0=I2S, 1=TDM)
+
+
+All codec options are to be included under the [ctrl] section for the audio card the
+mixer DLL is to be mounted under.
+
+[ctrl]
+name=mxesai-mx8
+options=rx_voices=2:2,tx_voices=2:2:2:2,rclk_pol=0
+mixer_dll=cs42xx8
+cs42xx8_clk_ratio=512
+cs42xx8_format=0
