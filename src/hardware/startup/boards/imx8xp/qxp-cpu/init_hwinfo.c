@@ -83,7 +83,8 @@ static unsigned imx8x_hwibus_add_can(unsigned parent_hwi_off, hwiattr_can_t *att
                                             }\
                                         }
 
-#if IMX_AUDIO_INIT_ENABLED
+//used by more than just audio    #if IMX_AUDIO_INIT_ENABLED
+#if 1
 /**
  * Add common device to the hwinfo table.
  *

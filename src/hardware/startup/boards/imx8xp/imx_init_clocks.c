@@ -1164,7 +1164,10 @@ int imx_init_dma_clock(imx_startup_data_t * startup_data)
                          SC_R_DMA_0_CH23 ,
                          SC_R_DMA_0_CH24 ,
                          SC_R_DMA_0_CH25 ,
+#if 0
+   results in SC_ERR_NOACCESS reply from SC
                          SC_R_DMA_0_CH26 ,
+#endif
                          SC_R_DMA_0_CH27 ,
                          SC_R_DMA_0_CH28 ,
                          SC_R_DMA_0_CH29 ,

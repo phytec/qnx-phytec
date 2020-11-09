@@ -31,23 +31,23 @@
 #define IMX_GPT_INIT_ENABLED               1
 #define IMX_ENET_INIT_ENABLED              1
 #define IMX_LPUART_INIT_ENABLED            1
-#define IMX_ISI_CSI_INIT_ENABLED           1
+#define IMX_ISI_CSI_INIT_ENABLED           0
 #define IMX_I2C_INIT_ENABLED               1
-#define IMX_LPSPI_INIT_ENABLED             1
+#define IMX_LPSPI_INIT_ENABLED             0
 #define IMX_FLEXSPI_INIT_ENABLED           1
 #define IMX_USDHC_INIT_ENABLED             1
 #define IMX_USB_INIT_ENABLED               1
 #define IMX_DC_INIT_ENABLED                1
 #define IMX_AUDIO_INIT_ENABLED             1
-#define IMX_FLEXCAN_INIT_ENABLED           1
+#define IMX_FLEXCAN_INIT_ENABLED           0
 #define IMX_GPIO_INIT_ENABLED              1
 #define IMX_PCIE_INIT_ENABLED              1
-#define IMX_MIPI_CSI_INIT_ENABLED          1
-#define IMX_PARALLEL_CSI_INIT_ENABLED      1
+#define IMX_MIPI_CSI_INIT_ENABLED          0
+#define IMX_PARALLEL_CSI_INIT_ENABLED      0
 #define IMX_GPU_INIT_ENABLED               1
 #define IMX_ENET_GET_MAC_ENABLED           1
-#define IMX_PCA9557_INIT_ENABLED           1
-#define IMX_PCA6416_INIT_ENABLED           1
+#define IMX_PCA9557_INIT_ENABLED           0
+#define IMX_PCA6416_INIT_ENABLED           0
 #define IMX_DMA_INIT_ENABLED               1
 #define IMX_VPU_INIT_ENABLED               1
 #define IMX_DSP_INIT_ENABLED               1
@@ -55,7 +55,7 @@
 #define IMX_PARALLEL_LCD_INIT_ENABLED      0
 
 /** Enables ARM Trusted Firmware support */
-//#define IMX_ARM_TRUSTED_FIRMWARE_ENABLED
+#define IMX_ARM_TRUSTED_FIRMWARE_ENABLED
 
 /** Message Unit used for SCFW IPC calls */
 #ifdef IMX_ARM_TRUSTED_FIRMWARE_ENABLED
