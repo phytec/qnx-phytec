@@ -56,7 +56,7 @@ ifs-imx8qxp-cpu-graphics.bin: imx8qxp-cpu-graphics.build
 	$(HOST_MKIFS) -vvv -r../install $(MKIFSFLAGS) $^ $@
 
 ipl-bin:
-	${QNX_HOST}/usr/bin/ntoaarch64-objcopy --input-target=elf64-littleaarch64 --output-target=binary ../install/aarch64le/boot/sys/ipl-$(BOARD_NAME) ./ipl-$(BOARD_NAME).bin
+	${QNX_HOST}/usr/bin/ntoaarch64-objcopy --input-target=elf64-littleaarch64 --output-target=binary ../src/hardware/ipl/boards/$(BOARD_NAME)/aarch64/le/ipl-$(BOARD_NAME) ./ipl-$(BOARD_NAME).bin
 ipl-imx:
 
 	# B0 silicon version
@@ -64,6 +64,7 @@ ipl-imx:
 	imx-mkimage/$(MKIMAGE_TOOL) -soc QX -rev B0 -append imx-mkimage/mx8qxb0-ahab-container.img -dev flexspi -c $(SCFW_FLAGS) -scfw imx-mkimage/scfw_tcm_b0.bin -ap ipl-$(BOARD_NAME).bin a35 $(IPL_START_ADDR) $(CM4_PARAMETER) -out ipl-$(BOARD_NAME)_flash_b0.imx
 
 	# C0 silicon version
+	# B0 SC firmware binary includes C0 support
 	imx-mkimage/$(MKIMAGE_TOOL) -soc QX -rev B0 -append imx-mkimage/mx8qxc0-ahab-container.img -c $(SCFW_FLAGS) -scfw imx-mkimage/scfw_tcm_b0.bin -ap ipl-$(BOARD_NAME).bin a35 $(IPL_START_ADDR) $(CM4_PARAMETER) -out ipl-$(BOARD_NAME)_c0.imx
 	imx-mkimage/$(MKIMAGE_TOOL) -soc QX -rev B0 -append imx-mkimage/mx8qxc0-ahab-container.img -dev flexspi -c $(SCFW_FLAGS) -scfw imx-mkimage/scfw_tcm_b0.bin -ap ipl-$(BOARD_NAME).bin a35 $(IPL_START_ADDR) $(CM4_PARAMETER) -out ipl-$(BOARD_NAME)_flash_c0.imx
 
